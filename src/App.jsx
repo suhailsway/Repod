@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
+const N8N_WEBHOOK = "https://suhailsway.app.n8n.cloud/webhook/e57c1bcf-e93d-4e54-8851-9832520b32c3";
 
 async function fetchLatestContent() {
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`;
@@ -10,7 +11,7 @@ async function fetchLatestContent() {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
   });
   const data = await res.json();
-  console.log("Airtable response:", JSON.stringify(data)); if (data.records && data.records.length > 0) {
+  if (data.records && data.records.length > 0) {
     return data.records[0].fields;
   }
   return null;
@@ -24,45 +25,54 @@ const clipData = [
 
 export default function App() {
   const [step, setStep] = useState("upload");
-  const [dragging, setDragging] = useState(false);
-  const [fileName, setFileName] = useState(null);
+  const [audioUrl, setAudioUrl] = useState("");
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("linkedin");
   const [copied, setCopied] = useState(null);
   const [results, setResults] = useState(null);
   const [loadingResults, setLoadingResults] = useState(false);
-  const fileRef = useRef();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (step === "results") { console.log("useEffect triggered");
+    if (step === "results") {
       setLoadingResults(true);
-      fetchLatestContent().then((data) => {
-        if (data) setResults(data);
-        setLoadingResults(false);
-      });
+      setTimeout(() => {
+        fetchLatestContent().then((data) => {
+          if (data) setResults(data);
+          setLoadingResults(false);
+        });
+      }, 90000);
     }
   }, [step]);
 
-  const handleFile = (file) => {
-    if (!file) return;
-    setFileName(file.name);
+  const handleSubmit = async () => {
+    if (!audioUrl.trim()) {
+      setError("Please enter a podcast URL");
+      return;
+    }
+    setError(null);
     setStep("processing");
+
+    try {
+      await fetch(N8N_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio_url: audioUrl }),
+      });
+    } catch (err) {
+      console.log("Webhook triggered");
+    }
+
     let p = 0;
     const interval = setInterval(() => {
-      p += Math.random() * 18;
+      p += Math.random() * 8;
       if (p >= 100) {
         p = 100;
         clearInterval(interval);
         setTimeout(() => setStep("results"), 400);
       }
       setProgress(Math.min(p, 100));
-    }, 320);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-    handleFile(e.dataTransfer.files[0]);
+    }, 900);
   };
 
   const copy = (key) => {
@@ -107,31 +117,31 @@ export default function App() {
               <span style={styles.heroAccent}>Every platform.</span>
             </h1>
             <p style={styles.sub}>
-              Upload your episode. Get LinkedIn posts, tweets, newsletters,
+              Paste your podcast URL. Get LinkedIn posts, tweets, newsletters,
               show notes, and viral short-form clips — in under 2 minutes.
             </p>
-            <div
-              style={{ ...styles.dropzone, ...(dragging ? styles.dropzoneDrag : {}) }}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => fileRef.current.click()}
-              className="dropzone"
-            >
-              <input
-                ref={fileRef}
-                type="file"
-                accept="audio/*,video/*"
-                style={{ display: "none" }}
-                onChange={(e) => handleFile(e.target.files[0])}
-              />
-              <div style={styles.dropIcon}>⬆</div>
-              <p style={styles.dropTitle}>Drop your episode here</p>
-              <p style={styles.dropSub}>MP3, MP4, WAV, M4A — up to 2GB</p>
-              <button style={styles.uploadBtn} onClick={(e) => { e.stopPropagation(); fileRef.current.click(); }}>
-                Choose file
+
+            <div style={styles.inputCard}>
+              <div style={styles.inputWrap}>
+                <span style={styles.inputIcon}>🎙</span>
+                <input
+                  style={styles.input}
+                  type="text"
+                  placeholder="Paste your podcast URL (YouTube, Buzzsprout, MP3...)"
+                  value={audioUrl}
+                  onChange={(e) => setAudioUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                />
+              </div>
+              {error && <p style={styles.error}>{error}</p>}
+              <button style={styles.submitBtn} onClick={handleSubmit}>
+                Generate Content →
               </button>
+              <p style={styles.inputHint}>
+                Supports YouTube, Buzzsprout, Anchor, MP3, MP4, WAV links
+              </p>
             </div>
+
             <div style={styles.stats}>
               {[["2 min", "avg processing"], ["6 assets", "per episode"], ["$0", "to start"]].map(([val, label]) => (
                 <div key={label} style={styles.stat}>
@@ -151,7 +161,7 @@ export default function App() {
                 <span style={styles.spinnerIcon}>◈</span>
               </div>
               <h2 style={styles.processingTitle}>Processing your episode</h2>
-              <p style={styles.processingFile}>{fileName}</p>
+              <p style={styles.processingFile}>{audioUrl}</p>
               <div style={styles.progressBar}>
                 <div style={{ ...styles.progressFill, width: `${progress}%` }} />
               </div>
@@ -187,14 +197,14 @@ export default function App() {
               <div>
                 <div style={styles.badge}>
                   <span style={styles.badgeDot} />
-                  {loadingResults ? "Loading..." : "Ready"}
+                  {loadingResults ? "Processing..." : "Ready"}
                 </div>
                 <h2 style={styles.resultsTitle}>Your content is ready</h2>
-                <p style={styles.resultsSub}>{fileName} · 6 assets generated</p>
+                <p style={styles.resultsSub}>6 assets generated</p>
               </div>
               <button style={styles.newBtn} onClick={() => {
                 setStep("upload");
-                setFileName(null);
+                setAudioUrl("");
                 setProgress(0);
                 setResults(null);
               }}>
@@ -206,7 +216,7 @@ export default function App() {
               <div style={styles.loadingWrap}>
                 <div className="spinner" style={{ ...styles.spinner, position: "relative", margin: "0 auto" }} />
                 <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>
-                  Fetching your content from Airtable...
+                  AI is generating your content... this takes about 90 seconds
                 </p>
               </div>
             ) : (
@@ -229,7 +239,7 @@ export default function App() {
                   </div>
                   <div style={styles.contentBox}>
                     <pre style={styles.contentText}>
-                      {results ? (results[activeTab] || "No content found for this field.") : "No data available."}
+                      {results ? (results[activeTab] || "No content found.") : "No data available."}
                     </pre>
                   </div>
                   <button
@@ -350,30 +360,49 @@ const styles = {
     margin: "0 auto 48px",
     lineHeight: 1.6,
   },
-  dropzone: {
-    border: "1px dashed #2a2a2a",
-    borderRadius: 16,
-    padding: "60px 40px",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
+  inputCard: {
     background: "#0d0d0d",
+    border: "1px solid #1a1a1a",
+    borderRadius: 16,
+    padding: 32,
     marginBottom: 40,
+    textAlign: "left",
   },
-  dropzoneDrag: { borderColor: "#E8FF47", background: "#111", transform: "scale(1.01)" },
-  dropIcon: { fontSize: 32, marginBottom: 16, color: "#E8FF47" },
-  dropTitle: { fontSize: 20, fontWeight: 600, marginBottom: 8, color: "#e0e0e0" },
-  dropSub: { fontSize: 13, color: "#555", marginBottom: 24 },
-  uploadBtn: {
+  inputWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    background: "#080808",
+    border: "1px solid #222",
+    borderRadius: 10,
+    padding: "12px 16px",
+    marginBottom: 16,
+  },
+  inputIcon: { fontSize: 20, flexShrink: 0 },
+  input: {
+    flex: 1,
+    background: "transparent",
+    border: "none",
+    color: "#f0f0f0",
+    fontSize: 14,
+    fontFamily: "'DM Mono', monospace",
+    outline: "none",
+  },
+  error: { color: "#ff6b6b", fontSize: 12, marginBottom: 12 },
+  submitBtn: {
+    width: "100%",
     background: "#E8FF47",
     color: "#0a0a0a",
     border: "none",
-    padding: "12px 32px",
-    borderRadius: 8,
-    fontSize: 14,
+    padding: "14px 32px",
+    borderRadius: 10,
+    fontSize: 15,
     fontWeight: 700,
     cursor: "pointer",
     letterSpacing: 1,
+    marginBottom: 12,
   },
+  inputHint: { fontSize: 11, color: "#444", textAlign: "center" },
   stats: { display: "flex", justifyContent: "center", gap: 60 },
   stat: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4 },
   statVal: { fontSize: 28, fontWeight: 800, color: "#E8FF47" },
@@ -404,7 +433,7 @@ const styles = {
     fontSize: 20, color: "#E8FF47",
   },
   processingTitle: { fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: "'DM Serif Display', Georgia, serif" },
-  processingFile: { fontSize: 13, color: "#555", marginBottom: 32 },
+  processingFile: { fontSize: 11, color: "#555", marginBottom: 32, wordBreak: "break-all" },
   progressBar: { height: 3, background: "#1a1a1a", borderRadius: 4, overflow: "hidden", marginBottom: 8 },
   progressFill: { height: "100%", background: "#E8FF47", borderRadius: 4, transition: "width 0.3s ease", boxShadow: "0 0 12px #E8FF47" },
   progressPct: { fontSize: 12, color: "#555", marginBottom: 32, textAlign: "right" },
@@ -463,8 +492,8 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0a0a0a; }
-  .dropzone:hover { border-color: #333 !important; background: #0f0f0f !important; }
   .clipcard:hover { border-color: #2a2a2a !important; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { animation: spin 1s linear infinite; }
+  input::placeholder { color: #333; }
 `;
