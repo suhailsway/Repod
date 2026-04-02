@@ -10,7 +10,7 @@ async function fetchLatestContent() {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
   });
   const data = await res.json();
-  console.log("Airtable response:", JSON.stringify(data)); if (data.records if (data.records && data.records.length > 0) {if (data.records && data.records.length > 0) { data.records.length > 0) {
+  console.log("Airtable response:", JSON.stringify(data)); if (data.records && data.records.length > 0) {
     return data.records[0].fields;
   }
   return null;
