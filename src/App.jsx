@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
-const N8N_WEBHOOK = "https://suhailsway.app.n8n.cloud/webhook/e57c1bcf-e93d-4e54-8851-9832520b32c3";
+const N8N_WEBHOOK = "/api/trigger";
 
 async function fetchLatestContent() {
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`;
