@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const AIRTABLE_TOKEN = "patMUwZOg2ahkAKVJ.fd932d78bea8f979a95ff6618771d5f4b2097ec4f98adf3b443d340d5cf357dd";
+const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
 
