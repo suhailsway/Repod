@@ -34,7 +34,7 @@ export default function App() {
   const fileRef = useRef();
 
   useEffect(() => {
-    if (step === "results") {
+    if (step === "results") { console.log("useEffect triggered");
       setLoadingResults(true);
       fetchLatestContent().then((data) => {
         if (data) setResults(data);
