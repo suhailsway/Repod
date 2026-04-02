@@ -5,7 +5,7 @@ const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
 
 async function fetchLatestContent() {
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?sort[0][field]=Created&sort[0][direction]=desc&maxRecords=1`;
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?maxRecords=1`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
   });
