@@ -38,7 +38,7 @@ export default function App() {
           if (data) setResults(data);
           setLoadingResults(false);
         });
-      }, 90000);
+      }, 180000);
     }
   }, [step]);
 
