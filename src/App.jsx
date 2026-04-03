@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
-const N8N_WEBHOOK = "/api/trigger";
 
 async function fetchLatestContent() {
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`;
@@ -25,6 +24,7 @@ const clipData = [
 
 export default function App() {
   const [step, setStep] = useState("upload");
+  const [inputMode, setInputMode] = useState("audio"); // "audio" or "video"
   const [audioUrl, setAudioUrl] = useState("");
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("linkedin");
@@ -32,6 +32,7 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [loadingResults, setLoadingResults] = useState(false);
   const [error, setError] = useState(null);
+  const [hasClips, setHasClips] = useState(false);
 
   useEffect(() => {
     if (step === "results") {
@@ -47,17 +48,21 @@ export default function App() {
 
   const handleSubmit = async () => {
     if (!audioUrl.trim()) {
-      setError("Please enter a podcast URL");
+      setError("Please enter a URL");
       return;
     }
     setError(null);
+    setHasClips(inputMode === "video");
     setStep("processing");
 
     try {
-      await fetch(N8N_WEBHOOK, {
+      await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audio_url: audioUrl }),
+        body: JSON.stringify({ 
+          audio_url: audioUrl,
+          mode: inputMode 
+        }),
       });
     } catch (err) {
       console.log("Webhook triggered");
@@ -121,13 +126,34 @@ export default function App() {
               show notes, and viral short-form clips — in under 2 minutes.
             </p>
 
+            {/* Mode Selector */}
+            <div style={styles.modeRow}>
+              <button
+                style={{ ...styles.modeBtn, ...(inputMode === "audio" ? styles.modeBtnActive : {}) }}
+                onClick={() => setInputMode("audio")}
+              >
+                🎙 Audio / Podcast
+                <span style={styles.modeSub}>MP3, Buzzsprout, Anchor</span>
+              </button>
+              <button
+                style={{ ...styles.modeBtn, ...(inputMode === "video" ? styles.modeBtnActive : {}) }}
+                onClick={() => setInputMode("video")}
+              >
+                🎬 YouTube / Video
+                <span style={styles.modeSub}>Includes short-form clips</span>
+                <span style={styles.modeBadge}>+ VIDEO CLIPS</span>
+              </button>
+            </div>
+
             <div style={styles.inputCard}>
               <div style={styles.inputWrap}>
-                <span style={styles.inputIcon}>🎙</span>
+                <span style={styles.inputIcon}>{inputMode === "audio" ? "🎙" : "🎬"}</span>
                 <input
                   style={styles.input}
                   type="text"
-                  placeholder="Paste your podcast URL (YouTube, Buzzsprout, MP3...)"
+                  placeholder={inputMode === "audio" 
+                    ? "Paste your podcast URL (MP3, Buzzsprout, Anchor...)" 
+                    : "Paste your YouTube or video URL..."}
                   value={audioUrl}
                   onChange={(e) => setAudioUrl(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -138,7 +164,9 @@ export default function App() {
                 Generate Content →
               </button>
               <p style={styles.inputHint}>
-                Supports YouTube, Buzzsprout, Anchor, MP3, MP4, WAV links
+                {inputMode === "audio" 
+                  ? "Generates: LinkedIn · Twitter · Newsletter · Show Notes"
+                  : "Generates: LinkedIn · Twitter · Newsletter · Show Notes · Video Clips 🎬"}
               </p>
             </div>
 
@@ -171,7 +199,7 @@ export default function App() {
                   ["Transcribing audio", 20],
                   ["Extracting key moments", 45],
                   ["Generating written content", 65],
-                  ["Creating video clips", 85],
+                  ...(hasClips ? [["Generating video clips", 80]] : []),
                   ["Finalising assets", 95],
                 ].map(([task, threshold]) => (
                   <div key={task} style={styles.task}>
@@ -200,13 +228,14 @@ export default function App() {
                   {loadingResults ? "Processing..." : "Ready"}
                 </div>
                 <h2 style={styles.resultsTitle}>Your content is ready</h2>
-                <p style={styles.resultsSub}>6 assets generated</p>
+                <p style={styles.resultsSub}>{hasClips ? "6 assets generated" : "4 assets generated"}</p>
               </div>
               <button style={styles.newBtn} onClick={() => {
                 setStep("upload");
                 setAudioUrl("");
                 setProgress(0);
                 setResults(null);
+                setHasClips(false);
               }}>
                 + New episode
               </button>
@@ -220,7 +249,7 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              <div style={styles.resultsGrid}>
+              <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips ? "1fr 1fr" : "1fr" }}>
                 <div style={styles.panel}>
                   <div style={styles.panelHeader}>
                     <span style={styles.panelTitle}>Written Content</span>
@@ -250,39 +279,41 @@ export default function App() {
                   </button>
                 </div>
 
-                <div style={styles.panel}>
-                  <div style={styles.panelHeader}>
-                    <span style={styles.panelTitle}>Short-Form Clips</span>
-                    <span style={styles.panelCount}>3 clips · Reels / Shorts / TikTok</span>
-                  </div>
-                  <div style={styles.clipList}>
-                    {clipData.map((clip) => (
-                      <div key={clip.id} style={styles.clipCard} className="clipcard">
-                        <div style={styles.clipThumb}>
-                          <div style={styles.clipPlay}>▶</div>
-                          <div style={styles.clipBadge}>9:16</div>
-                        </div>
-                        <div style={styles.clipInfo}>
-                          <p style={styles.clipHook}>"{clip.hook}"</p>
-                          <p style={styles.clipTime}>⏱ {clip.time}</p>
-                          <div style={styles.clipScoreRow}>
-                            <span style={styles.clipScoreLabel}>Viral score</span>
-                            <div style={styles.clipScoreBar}>
-                              <div style={{ ...styles.clipScoreFill, width: `${clip.score}%` }} />
-                            </div>
-                            <span style={styles.clipScoreNum}>{clip.score}</span>
+                {hasClips && (
+                  <div style={styles.panel}>
+                    <div style={styles.panelHeader}>
+                      <span style={styles.panelTitle}>Short-Form Clips</span>
+                      <span style={styles.panelCount}>3 clips · Reels / Shorts / TikTok</span>
+                    </div>
+                    <div style={styles.clipList}>
+                      {clipData.map((clip) => (
+                        <div key={clip.id} style={styles.clipCard} className="clipcard">
+                          <div style={styles.clipThumb}>
+                            <div style={styles.clipPlay}>▶</div>
+                            <div style={styles.clipBadge}>9:16</div>
                           </div>
+                          <div style={styles.clipInfo}>
+                            <p style={styles.clipHook}>"{clip.hook}"</p>
+                            <p style={styles.clipTime}>⏱ {clip.time}</p>
+                            <div style={styles.clipScoreRow}>
+                              <span style={styles.clipScoreLabel}>Viral score</span>
+                              <div style={styles.clipScoreBar}>
+                                <div style={{ ...styles.clipScoreFill, width: `${clip.score}%` }} />
+                              </div>
+                              <span style={styles.clipScoreNum}>{clip.score}</span>
+                            </div>
+                          </div>
+                          <button style={styles.dlBtn}>↓</button>
                         </div>
-                        <button style={styles.dlBtn}>↓</button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <div style={styles.platformRow}>
+                      {["Instagram Reels", "YouTube Shorts", "TikTok"].map(p => (
+                        <span key={p} style={styles.platformTag}>{p}</span>
+                      ))}
+                    </div>
                   </div>
-                  <div style={styles.platformRow}>
-                    {["Instagram Reels", "YouTube Shorts", "TikTok"].map(p => (
-                      <span key={p} style={styles.platformTag}>{p}</span>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -357,8 +388,50 @@ const styles = {
     fontSize: 17,
     color: "#888",
     maxWidth: 520,
-    margin: "0 auto 48px",
+    margin: "0 auto 40px",
     lineHeight: 1.6,
+  },
+  modeRow: {
+    display: "flex",
+    gap: 12,
+    marginBottom: 24,
+    justifyContent: "center",
+  },
+  modeBtn: {
+    background: "#0d0d0d",
+    border: "1px solid #1a1a1a",
+    color: "#666",
+    padding: "16px 24px",
+    borderRadius: 12,
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 600,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 4,
+    minWidth: 200,
+    position: "relative",
+    transition: "all 0.2s ease",
+  },
+  modeBtnActive: {
+    borderColor: "#E8FF47",
+    color: "#f0f0f0",
+    background: "#0f110a",
+  },
+  modeSub: {
+    fontSize: 11,
+    color: "#555",
+    fontWeight: 400,
+  },
+  modeBadge: {
+    fontSize: 9,
+    background: "#E8FF47",
+    color: "#0a0a0a",
+    padding: "2px 6px",
+    borderRadius: 4,
+    fontWeight: 700,
+    letterSpacing: 1,
   },
   inputCard: {
     background: "#0d0d0d",
