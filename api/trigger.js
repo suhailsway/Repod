@@ -14,9 +14,10 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'x-audio-url': audioUrl
+        'x-audio-url': audioUrl,
+        'x-content-mode': mode
       },
-      body: JSON.stringify({ audio_url: audioUrl, mode: mode }),
+      body: JSON.stringify({ audio_url: audioUrl }),
     });
     const responseText = await response.text();
     console.log('n8n response:', response.status, responseText);
