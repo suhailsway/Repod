@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useUser, SignInButton, SignOutButton, SignUpButton } from "@clerk/clerk-react";
 
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
@@ -23,6 +24,7 @@ const clipData = [
 ];
 
 export default function App() {
+  const { isSignedIn, user } = useUser();
   const [step, setStep] = useState("upload");
   const [inputMode, setInputMode] = useState("audio"); // "audio" or "video"
   const [audioUrl, setAudioUrl] = useState("");
@@ -112,7 +114,7 @@ export default function App() {
         <nav style={styles.nav}>
           <span style={styles.navLink}>Pricing</span>
           <span style={styles.navLink}>Docs</span>
-          <button style={styles.navBtn}>Sign in</button>
+          <SignInButton mode="modal"><button style={styles.navBtn}>Sign in</button></SignInButton>
           <button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button>
         </nav>
       </header>
