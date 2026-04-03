@@ -121,7 +121,7 @@ export default function App() {
       </header>
 
       <main style={styles.main}>
-        {step === "upload" && (
+        {step === "upload" && isSignedIn && (
           <div style={styles.heroWrap}>
             <div style={styles.badge}>
               <span style={styles.badgeDot} />
@@ -188,6 +188,15 @@ export default function App() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {!isSignedIn && step === "upload" && (
+          <div style={styles.heroWrap}>
+            <div style={styles.badge}><span style={styles.badgeDot} />AI-Powered</div>
+            <h1 style={styles.hero}>One podcast.<br /><span style={styles.heroAccent}>Every platform.</span></h1>
+            <p style={styles.sub}>Sign up to start repurposing your podcast content automatically.</p>
+            <SignUpButton mode="modal"><button style={styles.submitBtn}>Get Started Free →</button></SignUpButton>
           </div>
         )}
 
