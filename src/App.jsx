@@ -80,6 +80,12 @@ export default function App() {
     }, 900);
   };
 
+  const handleSubscribe = async () => {
+    const res = await fetch("/api/checkout", { method: "POST" });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+  };
+
   const copy = (key) => {
     const content = results ? results[key] : "";
     navigator.clipboard.writeText(content || "");
@@ -107,6 +113,7 @@ export default function App() {
           <span style={styles.navLink}>Pricing</span>
           <span style={styles.navLink}>Docs</span>
           <button style={styles.navBtn}>Sign in</button>
+          <button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button>
         </nav>
       </header>
 
@@ -343,6 +350,17 @@ const styles = {
   logoText: { fontSize: 18, fontWeight: 700, letterSpacing: 6, color: "#fff" },
   nav: { display: "flex", alignItems: "center", gap: 28 },
   navLink: { fontSize: 13, color: "#888", cursor: "pointer", letterSpacing: 1 },
+  subscribeBtn: {
+    background: "#E8FF47",
+    color: "#0a0a0a",
+    border: "none",
+    padding: "8px 20px",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 700,
+    letterSpacing: 1,
+  },
   navBtn: {
     background: "transparent",
     border: "1px solid #333",
