@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useUser, SignInButton, SignOutButton, SignUpButton } from "@clerk/clerk-react";
+import { useUser, SignInButton, SignOutButton, SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-react";
 
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
@@ -115,7 +115,8 @@ export default function App() {
           <span style={styles.navLink}>Pricing</span>
           <span style={styles.navLink}>Docs</span>
           <SignInButton mode="modal"><button style={styles.navBtn}>Sign in</button></SignInButton>
-          <button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button>
+          <SignedIn><SignOutButton><button style={styles.navBtn}>Sign out</button></SignOutButton></SignedIn>
+          <SignedOut><button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button></SignedOut>
         </nav>
       </header>
 
