@@ -16,16 +16,6 @@ async function fetchLatestContent() {
   }
   return null;
 }
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?maxRecords=1${filterFormula}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
-  });
-  const data = await res.json();
-  if (data.records && data.records.length > 0) {
-    return data.records[0].fields;
-  }
-  return null;
-}
 
 export default function App() {
   const { isSignedIn } = useUser();
@@ -39,7 +29,6 @@ export default function App() {
   const [loadingResults, setLoadingResults] = useState(false);
   const [error, setError] = useState(null);
   const [hasClips, setHasClips] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
     if (step === "results") {
@@ -51,7 +40,7 @@ export default function App() {
         });
       }, 180000);
     }
-  }, [step, sessionId]);
+  }, [step]);
 
   const handleSubmit = async () => {
     if (!audioUrl.trim()) {
@@ -63,13 +52,11 @@ export default function App() {
     setStep("processing");
 
     try {
-      const res = await fetch("/api/trigger", {
+      await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ audio_url: audioUrl, mode: inputMode }),
       });
-      const data = await res.json();
-      if (data.sessionId) setSessionId(data.sessionId);
     } catch (err) {
       console.log("Webhook triggered");
     }
@@ -263,7 +250,6 @@ export default function App() {
                 setProgress(0);
                 setResults(null);
                 setHasClips(false);
-                setSessionId(null);
               }}>
                 + New episode
               </button>
