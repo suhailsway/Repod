@@ -5,8 +5,11 @@ const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
 
-async function fetchLatestContent() {
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`;
+async function fetchLatestContent(sessionId) {
+  const filterFormula = sessionId
+    ? `&filterByFormula=%7Bsession_id%7D%3D%22${sessionId}%22`
+    : '&sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1';
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?maxRecords=1${filterFormula}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
   });
@@ -29,18 +32,19 @@ export default function App() {
   const [loadingResults, setLoadingResults] = useState(false);
   const [error, setError] = useState(null);
   const [hasClips, setHasClips] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
     if (step === "results") {
       setLoadingResults(true);
       setTimeout(() => {
-        fetchLatestContent().then((data) => {
+        fetchLatestContent(sessionId).then((data) => {
           if (data) setResults(data);
           setLoadingResults(false);
         });
       }, 180000);
     }
-  }, [step]);
+  }, [step, sessionId]);
 
   const handleSubmit = async () => {
     if (!audioUrl.trim()) {
@@ -52,11 +56,13 @@ export default function App() {
     setStep("processing");
 
     try {
-      await fetch("/api/trigger", {
+      const res = await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ audio_url: audioUrl, mode: inputMode }),
       });
+      const data = await res.json();
+      if (data.sessionId) setSessionId(data.sessionId);
     } catch (err) {
       console.log("Webhook triggered");
     }
@@ -93,7 +99,6 @@ export default function App() {
     { key: "shownotes", label: "Show Notes", icon: "📋" },
   ];
 
-  // Parse clip URLs from Airtable clips field
   const clipUrls = results?.clips ? results.clips.split('\n').filter(Boolean) : [];
   const clipTitles = results?.clip_titles ? results.clip_titles.split('\n').filter(Boolean) : [];
 
@@ -251,6 +256,7 @@ export default function App() {
                 setProgress(0);
                 setResults(null);
                 setHasClips(false);
+                setSessionId(null);
               }}>
                 + New episode
               </button>
@@ -260,7 +266,7 @@ export default function App() {
               <div style={styles.loadingWrap}>
                 <div className="spinner" style={{ ...styles.spinner, position: "relative", margin: "0 auto" }} />
                 <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>
-                  AI is generating your content... this takes about 90 seconds
+                  AI is generating your content... this takes about 3 minutes
                 </p>
               </div>
             ) : (
@@ -351,7 +357,6 @@ const styles = {
   logoMark: { fontSize: 22, color: "#E8FF47" },
   logoText: { fontSize: 18, fontWeight: 700, letterSpacing: 6, color: "#fff" },
   nav: { display: "flex", alignItems: "center", gap: 12 },
-  navLink: { fontSize: 13, color: "#888", cursor: "pointer", letterSpacing: 1 },
   navBtn: {
     background: "transparent",
     border: "1px solid #333",
@@ -546,7 +551,7 @@ const styles = {
     fontWeight: 600,
     letterSpacing: 1,
   },
-  resultsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 },
+  resultsGrid: { display: "grid", gap: 20 },
   panel: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 },
   panelHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   panelTitle: { fontSize: 14, fontWeight: 700, letterSpacing: 1, color: "#e0e0e0" },
