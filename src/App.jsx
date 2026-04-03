@@ -17,16 +17,10 @@ async function fetchLatestContent() {
   return null;
 }
 
-const clipData = [
-  { id: 1, time: "04:22–06:15", hook: "Why most AI products fail in 90 days", score: 94 },
-  { id: 2, time: "21:45–23:30", hook: "The no-code stack that costs $50/mo", score: 91 },
-  { id: 3, time: "33:10–35:00", hook: "Talk to 10 people before writing code", score: 87 },
-];
-
 export default function App() {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn } = useUser();
   const [step, setStep] = useState("upload");
-  const [inputMode, setInputMode] = useState("audio"); // "audio" or "video"
+  const [inputMode, setInputMode] = useState("audio");
   const [audioUrl, setAudioUrl] = useState("");
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("linkedin");
@@ -61,10 +55,7 @@ export default function App() {
       await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          audio_url: audioUrl,
-          mode: inputMode 
-        }),
+        body: JSON.stringify({ audio_url: audioUrl, mode: inputMode }),
       });
     } catch (err) {
       console.log("Webhook triggered");
@@ -83,7 +74,7 @@ export default function App() {
   };
 
   const handleSubscribe = async () => {
-    const res = await fetch("/api/checkout", { method: "POST" });
+    const res = await fetch('/api/checkout', { method: 'POST' });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
   };
@@ -102,6 +93,10 @@ export default function App() {
     { key: "shownotes", label: "Show Notes", icon: "📋" },
   ];
 
+  // Parse clip URLs from Airtable clips field
+  const clipUrls = results?.clips ? results.clips.split('\n').filter(Boolean) : [];
+  const clipTitles = results?.clip_titles ? results.clip_titles.split('\n').filter(Boolean) : [];
+
   return (
     <div style={styles.root}>
       <style>{css}</style>
@@ -112,15 +107,26 @@ export default function App() {
           <span style={styles.logoText}>REPOD</span>
         </div>
         <nav style={styles.nav}>
-          <span style={styles.navLink}>Pricing</span>
-          <span style={styles.navLink}>Docs</span>
-          <SignedOut><SignInButton mode="modal"><button style={styles.navBtn}>Sign in</button></SignInButton></SignedOut>
-          <SignedIn><SignOutButton><button style={styles.navBtn}>Sign out</button></SignOutButton></SignedIn>
-          <SignedOut><button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button></SignedOut>
+          <SignedOut>
+            <SignInButton mode="modal"><button style={styles.navBtn}>Sign in</button></SignInButton>
+            <button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button>
+          </SignedOut>
+          <SignedIn>
+            <SignOutButton><button style={styles.navBtn}>Sign out</button></SignOutButton>
+          </SignedIn>
         </nav>
       </header>
 
       <main style={styles.main}>
+        {step === "upload" && !isSignedIn && (
+          <div style={styles.heroWrap}>
+            <div style={styles.badge}><span style={styles.badgeDot} />AI-Powered</div>
+            <h1 style={styles.hero}>One podcast.<br /><span style={styles.heroAccent}>Every platform.</span></h1>
+            <p style={styles.sub}>Sign up to start repurposing your podcast content automatically.</p>
+            <SignUpButton mode="modal"><button style={styles.submitBtn}>Get Started Free →</button></SignUpButton>
+          </div>
+        )}
+
         {step === "upload" && isSignedIn && (
           <div style={styles.heroWrap}>
             <div style={styles.badge}>
@@ -136,7 +142,6 @@ export default function App() {
               show notes, and viral short-form clips — in under 2 minutes.
             </p>
 
-            {/* Mode Selector */}
             <div style={styles.modeRow}>
               <button
                 style={{ ...styles.modeBtn, ...(inputMode === "audio" ? styles.modeBtnActive : {}) }}
@@ -161,8 +166,8 @@ export default function App() {
                 <input
                   style={styles.input}
                   type="text"
-                  placeholder={inputMode === "audio" 
-                    ? "Paste your podcast URL (MP3, Buzzsprout, Anchor...)" 
+                  placeholder={inputMode === "audio"
+                    ? "Paste your podcast URL (MP3, Buzzsprout, Anchor...)"
                     : "Paste your YouTube or video URL..."}
                   value={audioUrl}
                   onChange={(e) => setAudioUrl(e.target.value)}
@@ -174,7 +179,7 @@ export default function App() {
                 Generate Content →
               </button>
               <p style={styles.inputHint}>
-                {inputMode === "audio" 
+                {inputMode === "audio"
                   ? "Generates: LinkedIn · Twitter · Newsletter · Show Notes"
                   : "Generates: LinkedIn · Twitter · Newsletter · Show Notes · Video Clips 🎬"}
               </p>
@@ -188,15 +193,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {!isSignedIn && step === "upload" && (
-          <div style={styles.heroWrap}>
-            <div style={styles.badge}><span style={styles.badgeDot} />AI-Powered</div>
-            <h1 style={styles.hero}>One podcast.<br /><span style={styles.heroAccent}>Every platform.</span></h1>
-            <p style={styles.sub}>Sign up to start repurposing your podcast content automatically.</p>
-            <SignUpButton mode="modal"><button style={styles.submitBtn}>Get Started Free →</button></SignUpButton>
           </div>
         )}
 
@@ -268,7 +264,7 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips ? "1fr 1fr" : "1fr" }}>
+              <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
                 <div style={styles.panel}>
                   <div style={styles.panelHeader}>
                     <span style={styles.panelTitle}>Written Content</span>
@@ -298,31 +294,25 @@ export default function App() {
                   </button>
                 </div>
 
-                {hasClips && (
+                {hasClips && clipUrls.length > 0 && (
                   <div style={styles.panel}>
                     <div style={styles.panelHeader}>
                       <span style={styles.panelTitle}>Short-Form Clips</span>
-                      <span style={styles.panelCount}>3 clips · Reels / Shorts / TikTok</span>
+                      <span style={styles.panelCount}>{clipUrls.length} clips · Reels / Shorts / TikTok</span>
                     </div>
                     <div style={styles.clipList}>
-                      {clipData.map((clip) => (
-                        <div key={clip.id} style={styles.clipCard} className="clipcard">
-                          <div style={styles.clipThumb}>
-                            <div style={styles.clipPlay}>▶</div>
-                            <div style={styles.clipBadge}>9:16</div>
-                          </div>
+                      {clipUrls.map((url, index) => (
+                        <div key={index} style={styles.clipCard}>
+                          <video
+                            style={styles.clipVideo}
+                            src={url}
+                            controls
+                            playsInline
+                          />
                           <div style={styles.clipInfo}>
-                            <p style={styles.clipHook}>"{clip.hook}"</p>
-                            <p style={styles.clipTime}>⏱ {clip.time}</p>
-                            <div style={styles.clipScoreRow}>
-                              <span style={styles.clipScoreLabel}>Viral score</span>
-                              <div style={styles.clipScoreBar}>
-                                <div style={{ ...styles.clipScoreFill, width: `${clip.score}%` }} />
-                              </div>
-                              <span style={styles.clipScoreNum}>{clip.score}</span>
-                            </div>
+                            <p style={styles.clipHook}>{clipTitles[index] || `Clip ${index + 1}`}</p>
+                            <a href={url} download style={styles.dlLink}>↓ Download</a>
                           </div>
-                          <button style={styles.dlBtn}>↓</button>
                         </div>
                       ))}
                     </div>
@@ -360,8 +350,18 @@ const styles = {
   logo: { display: "flex", alignItems: "center", gap: 10 },
   logoMark: { fontSize: 22, color: "#E8FF47" },
   logoText: { fontSize: 18, fontWeight: 700, letterSpacing: 6, color: "#fff" },
-  nav: { display: "flex", alignItems: "center", gap: 28 },
+  nav: { display: "flex", alignItems: "center", gap: 12 },
   navLink: { fontSize: 13, color: "#888", cursor: "pointer", letterSpacing: 1 },
+  navBtn: {
+    background: "transparent",
+    border: "1px solid #333",
+    color: "#f0f0f0",
+    padding: "8px 20px",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: 13,
+    letterSpacing: 1,
+  },
   subscribeBtn: {
     background: "#E8FF47",
     color: "#0a0a0a",
@@ -371,16 +371,6 @@ const styles = {
     cursor: "pointer",
     fontSize: 13,
     fontWeight: 700,
-    letterSpacing: 1,
-  },
-  navBtn: {
-    background: "transparent",
-    border: "1px solid #333",
-    color: "#f0f0f0",
-    padding: "8px 20px",
-    borderRadius: 4,
-    cursor: "pointer",
-    fontSize: 13,
     letterSpacing: 1,
   },
   main: { maxWidth: 900, margin: "0 auto", padding: "60px 24px" },
@@ -441,7 +431,6 @@ const styles = {
     alignItems: "flex-start",
     gap: 4,
     minWidth: 200,
-    position: "relative",
     transition: "all 0.2s ease",
   },
   modeBtnActive: {
@@ -449,11 +438,7 @@ const styles = {
     color: "#f0f0f0",
     background: "#0f110a",
   },
-  modeSub: {
-    fontSize: 11,
-    color: "#555",
-    fontWeight: 400,
-  },
+  modeSub: { fontSize: 11, color: "#555", fontWeight: 400 },
   modeBadge: {
     fontSize: 9,
     background: "#E8FF47",
@@ -573,20 +558,12 @@ const styles = {
   contentText: { fontSize: 12, lineHeight: 1.7, color: "#aaa", whiteSpace: "pre-wrap", fontFamily: "'DM Mono', monospace", margin: 0 },
   copyBtn: { background: "#111", border: "1px solid #222", color: "#888", padding: "10px", borderRadius: 8, cursor: "pointer", fontSize: 12, letterSpacing: 1, transition: "all 0.2s ease" },
   copyBtnDone: { borderColor: "#E8FF47", color: "#E8FF47", background: "#0f110a" },
-  clipList: { display: "flex", flexDirection: "column", gap: 12 },
-  clipCard: { display: "flex", alignItems: "center", gap: 14, background: "#080808", border: "1px solid #161616", borderRadius: 10, padding: 12, transition: "border-color 0.2s ease" },
-  clipThumb: { width: 44, height: 78, background: "#111", borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", border: "1px solid #1a1a1a" },
-  clipPlay: { fontSize: 14, color: "#E8FF47" },
-  clipBadge: { position: "absolute", bottom: 4, right: 4, fontSize: 8, color: "#555", letterSpacing: 0.5 },
-  clipInfo: { flex: 1 },
-  clipHook: { fontSize: 12, color: "#ccc", marginBottom: 4, lineHeight: 1.4 },
-  clipTime: { fontSize: 11, color: "#444", marginBottom: 8 },
-  clipScoreRow: { display: "flex", alignItems: "center", gap: 8 },
-  clipScoreLabel: { fontSize: 10, color: "#444", whiteSpace: "nowrap" },
-  clipScoreBar: { flex: 1, height: 3, background: "#1a1a1a", borderRadius: 4, overflow: "hidden" },
-  clipScoreFill: { height: "100%", background: "#E8FF47", boxShadow: "0 0 6px #E8FF47" },
-  clipScoreNum: { fontSize: 11, color: "#E8FF47", fontWeight: 700, minWidth: 24 },
-  dlBtn: { background: "#111", border: "1px solid #1a1a1a", color: "#E8FF47", width: 32, height: 32, borderRadius: 6, cursor: "pointer", fontSize: 14, flexShrink: 0 },
+  clipList: { display: "flex", flexDirection: "column", gap: 16 },
+  clipCard: { display: "flex", flexDirection: "column", gap: 8, background: "#080808", border: "1px solid #161616", borderRadius: 10, overflow: "hidden" },
+  clipVideo: { width: "100%", aspectRatio: "9/16", maxHeight: 300, background: "#000", objectFit: "contain" },
+  clipInfo: { padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" },
+  clipHook: { fontSize: 12, color: "#ccc", flex: 1 },
+  dlLink: { fontSize: 12, color: "#E8FF47", textDecoration: "none", fontWeight: 700 },
   platformRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   platformTag: { fontSize: 11, color: "#444", border: "1px solid #1a1a1a", borderRadius: 100, padding: "4px 12px", letterSpacing: 0.5 },
 };
@@ -595,7 +572,6 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0a0a0a; }
-  .clipcard:hover { border-color: #2a2a2a !important; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { animation: spin 1s linear infinite; }
   input::placeholder { color: #333; }
