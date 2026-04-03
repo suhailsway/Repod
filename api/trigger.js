@@ -9,13 +9,14 @@ export default async function handler(req, res) {
 
   try {
     const audioUrl = req.body.audio_url;
+    const mode = req.body.mode || 'audio';
     const response = await fetch('https://suhailsway.app.n8n.cloud/webhook/e57c1bcf-e93d-4e54-8851-9832520b32c3', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'x-audio-url': audioUrl
       },
-      body: JSON.stringify({ audio_url: audioUrl }),
+      body: JSON.stringify({ audio_url: audioUrl, mode: mode }),
     });
     const responseText = await response.text();
     console.log('n8n response:', response.status, responseText);
