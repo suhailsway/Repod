@@ -17,13 +17,11 @@ export default async function handler(req, res) {
       headers: { 
         'Content-Type': 'application/json',
         'x-audio-url': audioUrl,
-        'x-content-mode': mode,
-        'x-session-id': sessionId
+        'x-content-mode': mode
       },
-      body: JSON.stringify({ audio_url: audioUrl }),
+      body: JSON.stringify({ audio_url: audioUrl, session_id: sessionId }),
     });
     const responseText = await response.text();
-    console.log('n8n response:', response.status, responseText);
     return res.status(200).json({ success: true, sessionId: sessionId });
   } catch (err) {
     return res.status(500).json({ error: err.message });
