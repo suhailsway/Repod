@@ -114,7 +114,7 @@ export default function App() {
         <nav style={styles.nav}>
           <span style={styles.navLink}>Pricing</span>
           <span style={styles.navLink}>Docs</span>
-          <SignInButton mode="modal"><button style={styles.navBtn}>Sign in</button></SignInButton>
+          <SignedOut><SignInButton mode="modal"><button style={styles.navBtn}>Sign in</button></SignInButton></SignedOut>
           <SignedIn><SignOutButton><button style={styles.navBtn}>Sign out</button></SignOutButton></SignedIn>
           <SignedOut><button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button></SignedOut>
         </nav>
