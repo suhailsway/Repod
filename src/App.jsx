@@ -5,10 +5,17 @@ const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
 
-async function fetchLatestContent(sessionId) {
-  const filterFormula = sessionId
-    ? `&filterByFormula=%7Bsession_id%7D%3D%22${sessionId}%22`
-    : '&sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1';
+async function fetchLatestContent() {
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
+  });
+  const data = await res.json();
+  if (data.records && data.records.length > 0) {
+    return data.records[0].fields;
+  }
+  return null;
+}
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?maxRecords=1${filterFormula}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
@@ -38,7 +45,7 @@ export default function App() {
     if (step === "results") {
       setLoadingResults(true);
       setTimeout(() => {
-        fetchLatestContent(sessionId).then((data) => {
+        fetchLatestContent().then((data) => {
           if (data) setResults(data);
           setLoadingResults(false);
         });
