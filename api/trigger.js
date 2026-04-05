@@ -6,11 +6,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-
   try {
     const audioUrl = req.body.audio_url;
     const mode = req.body.mode || 'audio';
-    const sessionId = Date.now().toString();
+    const sessionId = req.body.session_id || Date.now().toString();
 
     await fetch('https://suhailsway.app.n8n.cloud/webhook/e57c1bcf-e93d-4e54-8851-9832520b32c3', {
       method: 'POST',
@@ -20,7 +19,6 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({ audio_url: audioUrl, session_id: sessionId }),
     });
-
     return res.status(200).json({ success: true, sessionId });
   } catch (err) {
     return res.status(500).json({ error: err.message });
