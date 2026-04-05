@@ -5,8 +5,8 @@ const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
 
-async function fetchLatestContent() {
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?sort%5B0%5D%5Bfield%5D=created&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`;
+async function fetchLatestContent(sessionId) {
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?filterByFormula=${encodeURIComponent(`{session_id}="${sessionId}"`)}&maxRecords=1`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
   });
@@ -29,18 +29,19 @@ export default function App() {
   const [loadingResults, setLoadingResults] = useState(false);
   const [error, setError] = useState(null);
   const [hasClips, setHasClips] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
-    if (step === "results") {
+    if (step === "results" && sessionId) {
       setLoadingResults(true);
       setTimeout(() => {
-        fetchLatestContent().then((data) => {
+        fetchLatestContent(sessionId).then((data) => {
           if (data) setResults(data);
           setLoadingResults(false);
         });
       }, 180000);
     }
-  }, [step]);
+  }, [step, sessionId]);
 
   const handleSubmit = async () => {
     if (!audioUrl.trim()) {
@@ -51,14 +52,34 @@ export default function App() {
     setHasClips(inputMode === "video");
     setStep("processing");
 
+    const newSessionId = Date.now().toString();
+    setSessionId(newSessionId);
+
     try {
+      // Always call the audio workflow
       await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audio_url: audioUrl, mode: inputMode }),
+        body: JSON.stringify({
+          audio_url: audioUrl,
+          mode: inputMode,
+          session_id: newSessionId,
+        }),
       });
+
+      // If video mode, also call SupoClip workflow
+      if (inputMode === "video") {
+        await fetch("https://suhailsway.app.n8n.cloud/webhook/supoClip-workflow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            youtube_url: audioUrl,
+            session_id: newSessionId,
+          }),
+        });
+      }
     } catch (err) {
-      console.log("Webhook triggered");
+      console.log("Webhooks triggered");
     }
 
     let p = 0;
@@ -93,8 +114,27 @@ export default function App() {
     { key: "shownotes", label: "Show Notes", icon: "📋" },
   ];
 
-  const clipUrls = results?.clips ? results.clips.split('\n').filter(Boolean) : [];
-  const clipTitles = results?.clip_titles ? results.clip_titles.split('\n').filter(Boolean) : [];
+  const clipUrls = results?.clips
+    ? (() => {
+        try {
+          const parsed = JSON.parse(results.clips);
+          return parsed.map(clip => `http://159.203.99.184:8000/clips/${clip.filename}`);
+        } catch {
+          return results.clips.split('\n').filter(Boolean);
+        }
+      })()
+    : [];
+
+  const clipTitles = results?.clips
+    ? (() => {
+        try {
+          const parsed = JSON.parse(results.clips);
+          return parsed.map(clip => clip.text ? clip.text.substring(0, 80) + "..." : `Clip`);
+        } catch {
+          return results.clip_titles ? results.clip_titles.split('\n').filter(Boolean) : [];
+        }
+      })()
+    : [];
 
   return (
     <div style={styles.root}>
@@ -250,6 +290,7 @@ export default function App() {
                 setProgress(0);
                 setResults(null);
                 setHasClips(false);
+                setSessionId(null);
               }}>
                 + New episode
               </button>
