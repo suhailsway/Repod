@@ -40,7 +40,7 @@ export default function App() {
       const interval = setInterval(async () => {
         attempts++;
         const data = await fetchLatestContent(sessionId);
-        if (data && (data.linkedin || data.video_clips)) {
+        if (data && data.video_clips) {
           setResults(data);
           setLoadingResults(false);
           clearInterval(interval);
