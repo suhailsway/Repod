@@ -118,7 +118,7 @@ export default function App() {
     ? (() => {
         try {
           const parsed = JSON.parse(results.clips);
-          return parsed.map(clip => `http://159.203.99.184:8000/clips/${clip.filename}`);
+          return parsed.map(clip => `/api/clips/${clip.filename}`);
         } catch {
           return results.clips.split('\n').filter(Boolean);
         }
