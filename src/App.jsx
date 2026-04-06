@@ -35,7 +35,7 @@ export default function App() {
     if (step === "results" && sessionId) {
       setLoadingResults(true);
       let attempts = 0;
-      const maxAttempts = 20;
+      const maxAttempts = 40;
 
       const interval = setInterval(async () => {
         attempts++;
