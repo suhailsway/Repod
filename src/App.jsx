@@ -114,21 +114,21 @@ export default function App() {
     { key: "shownotes", label: "Show Notes", icon: "📋" },
   ];
 
-  const clipUrls = results?.clips
+  const clipUrls = results?.video_clips
     ? (() => {
         try {
-          const parsed = JSON.parse(results.clips);
+          const parsed = JSON.parse(results.video_clips);
           return parsed.map(clip => `/api/clips/${clip.filename}`);
         } catch {
-          return results.clips.split('\n').filter(Boolean);
+          return results.video_clips.split('\n').filter(Boolean);
         }
       })()
     : [];
 
-  const clipTitles = results?.clips
+  const clipTitles = results?.video_clips
     ? (() => {
         try {
-          const parsed = JSON.parse(results.clips);
+          const parsed = JSON.parse(results.video_clips);
           return parsed.map(clip => clip.text ? clip.text.substring(0, 80) + "..." : `Clip`);
         } catch {
           return results.clip_titles ? results.clip_titles.split('\n').filter(Boolean) : [];
