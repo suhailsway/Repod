@@ -34,12 +34,23 @@ export default function App() {
   useEffect(() => {
     if (step === "results" && sessionId) {
       setLoadingResults(true);
-      setTimeout(() => {
-        fetchLatestContent(sessionId).then((data) => {
-          if (data) setResults(data);
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      const interval = setInterval(async () => {
+        attempts++;
+        const data = await fetchLatestContent(sessionId);
+        if (data && (data.linkedin || data.video_clips)) {
+          setResults(data);
           setLoadingResults(false);
-        });
-      }, 180000);
+          clearInterval(interval);
+        } else if (attempts >= maxAttempts) {
+          setLoadingResults(false);
+          clearInterval(interval);
+        }
+      }, 30000);
+
+      return () => clearInterval(interval);
     }
   }, [step, sessionId]);
 
