@@ -129,7 +129,7 @@ export default function App() {
     ? (() => {
         try {
           const parsed = JSON.parse(results.video_clips);
-          return parsed.map(clip => `/api/clips/${clip.filename}`);
+          return parsed.map(clip => `/api/clips?file=${clip.filename}`);
         } catch {
           return results.video_clips.split('\n').filter(Boolean);
         }

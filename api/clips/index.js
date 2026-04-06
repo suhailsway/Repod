@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
-  const path = Array.isArray(req.query.path) ? req.query.path.join('/') : req.query.path;
-  const url = `http://159.203.99.184:8000/clips/${path}`;
+  const file = req.query.file;
+  const url = `http://159.203.99.184:8000/clips/${file}`;
   
   const response = await fetch(url);
   
