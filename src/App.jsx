@@ -226,6 +226,19 @@ export default function App() {
                   onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 />
               </div>
+              {inputMode === "video" && (
+                <div style={{marginTop: "12px", textAlign: "center"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",margin:"8px 0"}}>
+                    <div style={{flex:1,height:"1px",background:"#333"}}/>
+                    <span style={{color:"#666",fontSize:"12px"}}>or</span>
+                    <div style={{flex:1,height:"1px",background:"#333"}}/>
+                  </div>
+                  <label style={{cursor:"pointer",padding:"8px 16px",border:"1px dashed #555",borderRadius:"8px",color:"#aaa",fontSize:"13px",display:"inline-block"}}>
+                    {videoFile ? `✓ ${videoFile.name}` : "Upload MP4 file"}
+                    <input type="file" accept="video/mp4" style={{display:"none"}} onChange={(e) => setVideoFile(e.target.files[0]||null)} />
+                  </label>
+                </div>
+              )}
               {error && <p style={styles.error}>{error}</p>}
               <button style={styles.submitBtn} onClick={handleSubmit}>
                 Generate Content →
