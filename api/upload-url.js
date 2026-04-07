@@ -8,6 +8,7 @@ const s3 = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
+  forcePathStyle: true,
 });
 
 export default async function handler(req, res) {
@@ -28,7 +29,12 @@ export default async function handler(req, res) {
   if (action === 'part') {
     const cmd = new UploadPartCommand({ Bucket: "repod", Key: key, UploadId: uploadId, PartNumber: partNumber });
     const signedUrl = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
-    return res.status(200).json({ signedUrl });
+    // Replace internal endpoint with public-facing one
+    const publicSignedUrl = signedUrl.replace(
+      process.env.R2_ENDPOINT,
+      'https://edd674a7e783406f363d0e75a44d6390.r2.cloudflarestorage.com'
+    );
+    return res.status(200).json({ signedUrl: publicSignedUrl });
   }
 
   if (action === 'complete') {
