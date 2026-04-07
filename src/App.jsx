@@ -73,7 +73,7 @@ export default function App() {
       if (videoFile && inputMode === "video") {
         const formData = new FormData();
         formData.append("video", videoFile);
-        const uploadRes = await fetch("http://159.203.99.184:5001/upload", {
+        const uploadRes = await fetch("https://mail-enough-bands-swim.trycloudflare.com/upload", {
           method: "POST",
           body: formData,
         });
