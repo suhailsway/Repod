@@ -69,22 +69,16 @@ export default function App() {
     setSessionId(newSessionId);
 
     try {
-      // If video file uploaded, upload to R2 first
+      // If video file uploaded, send to DO server which streams to R2
       if (videoFile && inputMode === "video") {
-        const urlRes = await fetch("/api/upload-url", {
+        const formData = new FormData();
+        formData.append("video", videoFile);
+        const uploadRes = await fetch("http://159.203.99.184:5001/upload", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: videoFile.name, contentType: videoFile.type }),
+          body: formData,
         });
-        const { signedUrl, publicUrl } = await urlRes.json();
-
-        await fetch(signedUrl, {
-          method: "PUT",
-          headers: { "Content-Type": videoFile.type },
-          body: videoFile,
-        });
-
-        videoPath = publicUrl;
+        const uploadData = await uploadRes.json();
+        videoPath = uploadData.url;
       }
       // Call trigger
       await fetch("/api/trigger", {
