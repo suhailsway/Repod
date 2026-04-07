@@ -22,6 +22,7 @@ export default function App() {
   const [step, setStep] = useState("upload");
   const [inputMode, setInputMode] = useState("audio");
   const [audioUrl, setAudioUrl] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("linkedin");
   const [copied, setCopied] = useState(null);
@@ -55,7 +56,7 @@ export default function App() {
   }, [step, sessionId]);
 
   const handleSubmit = async () => {
-    if (!audioUrl.trim()) {
+    if (!audioUrl.trim() && !videoFile) {
       setError("Please enter a URL");
       return;
     }
