@@ -62,6 +62,7 @@ export default function App() {
     }
     setError(null);
     setHasClips(inputMode === "video");
+    let videoPath = null;
     setStep("processing");
 
     const newSessionId = Date.now().toString();
@@ -73,7 +74,7 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          audio_url: audioUrl,
+          audio_url: videoPath || audioUrl,
           mode: inputMode,
           session_id: newSessionId,
         }),
