@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const s3 = new S3Client({
@@ -16,17 +16,30 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { filename, contentType } = req.body;
-  const key = `uploads/${Date.now()}-${filename}`;
+  const { action, filename, contentType, uploadId, key, partNumber, parts } = req.body;
 
-  const command = new PutObjectCommand({
-    Bucket: "repod",
-    Key: key,
-    ContentType: contentType,
-  });
+  if (action === 'start') {
+    const k = `uploads/${Date.now()}-${filename}`;
+    const cmd = new CreateMultipartUploadCommand({ Bucket: "repod", Key: k, ContentType: contentType });
+    const { UploadId } = await s3.send(cmd);
+    return res.status(200).json({ uploadId: UploadId, key: k });
+  }
 
-  const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
-  const publicUrl = `https://pub-7fc49bc38ef843c4b661126192316ebc.r2.dev/${key}`;
+  if (action === 'part') {
+    const cmd = new UploadPartCommand({ Bucket: "repod", Key: key, UploadId: uploadId, PartNumber: partNumber });
+    const signedUrl = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
+    return res.status(200).json({ signedUrl });
+  }
 
-  return res.status(200).json({ signedUrl, publicUrl });
+  if (action === 'complete') {
+    const cmd = new CompleteMultipartUploadCommand({
+      Bucket: "repod", Key: key, UploadId: uploadId,
+      MultipartUpload: { Parts: parts },
+    });
+    await s3.send(cmd);
+    const publicUrl = `https://pub-7fc49bc38ef843c4b661126192316ebc.r2.dev/${key}`;
+    return res.status(200).json({ url: publicUrl });
+  }
+
+  return res.status(400).json({ error: "Invalid action" });
 }
