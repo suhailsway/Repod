@@ -73,7 +73,7 @@ export default function App() {
       if (videoFile && inputMode === "video") {
         const formData = new FormData();
         formData.append("video", videoFile);
-        const uploadRes = await fetch("https://mail-enough-bands-swim.trycloudflare.com/upload", {
+        const uploadRes = await fetch("https://pseudovelar-heterogonously-gisela.ngrok-free.app/upload", {
           method: "POST",
           body: formData,
         });
