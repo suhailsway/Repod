@@ -6,15 +6,18 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { audio_url, mode = 'audio', session_id } = req.body;
+    const { audio_url, video_path, mode = 'audio', session_id } = req.body;
     const sessionId = session_id || Date.now().toString();
+    const sourceUrl = video_path || audio_url;
 
-    // Always call audio workflow
-    await fetch('https://suhailsway.app.n8n.cloud/webhook/e57c1bcf-e93d-4e54-8851-9832520b32c3', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-content-mode': mode },
-      body: JSON.stringify({ audio_url, session_id: sessionId }),
-    });
+    // Call audio workflow (n8n) only for audio mode
+    if (mode === 'audio') {
+      await fetch('https://suhailsway.app.n8n.cloud/webhook/e57c1bcf-e93d-4e54-8851-9832520b32c3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-content-mode': mode },
+        body: JSON.stringify({ audio_url, session_id: sessionId }),
+      });
+    }
 
     // If video mode, call SupoClip and save to Airtable directly
     if (mode === 'video') {
@@ -22,7 +25,7 @@ export default async function handler(req, res) {
       const supoclipRes = await fetch('http://159.203.99.184:8000/tasks/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'user_id': 'lW7aCYzHDCJtp3pJ5TqSD0xXsa8zXjSd' },
-        body: JSON.stringify({ source: { url: audio_url } }),
+        body: JSON.stringify({ source: { url: sourceUrl } }),
       });
       const supoclipData = await supoclipRes.json();
       const taskId = supoclipData.task_id;
