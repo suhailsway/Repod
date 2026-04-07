@@ -69,28 +69,26 @@ export default function App() {
     setSessionId(newSessionId);
 
     try {
-      // Always call the audio workflow
+      // If video file uploaded, upload it first
+      if (videoFile && inputMode === "video") {
+        const formData = new FormData();
+        formData.append("video", videoFile);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
+        videoPath = uploadData.video_path;
+      }
+
+      // Call trigger
       await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           audio_url: videoPath || audioUrl,
+          video_path: videoPath || null,
           mode: inputMode,
           session_id: newSessionId,
         }),
       });
-
-      // If video mode, also call SupoClip workflow
-      if (inputMode === "video") {
-        await fetch("https://suhailsway.app.n8n.cloud/webhook/supoClip-workflow", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            youtube_url: audioUrl,
-            session_id: newSessionId,
-          }),
-        });
-      }
     } catch (err) {
       console.log("Webhooks triggered");
     }
