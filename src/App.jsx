@@ -69,15 +69,23 @@ export default function App() {
     setSessionId(newSessionId);
 
     try {
-      // If video file uploaded, upload it first
+      // If video file uploaded, upload to R2 first
       if (videoFile && inputMode === "video") {
-        const formData = new FormData();
-        formData.append("video", videoFile);
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        const uploadData = await uploadRes.json();
-        videoPath = uploadData.video_path;
-      }
+        const urlRes = await fetch("/api/upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: videoFile.name, contentType: videoFile.type }),
+        });
+        const { signedUrl, publicUrl } = await urlRes.json();
 
+        await fetch(signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": videoFile.type },
+          body: videoFile,
+        });
+
+        videoPath = publicUrl;
+      }
       // Call trigger
       await fetch("/api/trigger", {
         method: "POST",
