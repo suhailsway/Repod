@@ -69,38 +69,16 @@ export default function App() {
     setSessionId(newSessionId);
 
     try {
-      // Multipart upload directly to R2
+      // Upload video to DO server which streams to R2
       if (videoFile && inputMode === "video") {
-        const CHUNK_SIZE = 5 * 1024 * 1024;
-        const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
-        const startRes = await fetch("/api/upload-url", {
+        const formData = new FormData();
+        formData.append("video", videoFile);
+        const uploadRes = await fetch("https://upload.repodlab.com/upload", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "start", filename: videoFile.name, contentType: videoFile.type }),
+          body: formData,
         });
-        const { uploadId, key } = await startRes.json();
-        const parts = [];
-        for (let i = 0; i < totalChunks; i++) {
-          const start = i * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, videoFile.size);
-          const chunk = videoFile.slice(start, end);
-          const partRes = await fetch("/api/upload-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "part", key, uploadId, partNumber: i + 1 }),
-          });
-          const { signedUrl } = await partRes.json();
-          const uploadRes = await fetch(signedUrl, { method: "PUT", body: chunk });
-          const etag = uploadRes.headers.get("ETag");
-          parts.push({ PartNumber: i + 1, ETag: etag });
-        }
-        const completeRes = await fetch("/api/upload-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "complete", key, uploadId, parts }),
-        });
-        const completeData = await completeRes.json();
-        videoPath = completeData.url;
+        const uploadData = await uploadRes.json();
+        videoPath = uploadData.url;
       }
       // Call trigger
       await fetch("/api/trigger", {
