@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ${process.env.AIRTABLE_TOKEN}',
+          'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ fields: { session_id: sessionId, task_id: taskId } }),
