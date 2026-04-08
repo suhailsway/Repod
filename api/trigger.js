@@ -12,55 +12,72 @@ export default async function handler(req, res) {
 
     if (mode === 'audio') {
       // Step 1: Transcribe with Deepgram
-      const dgRes = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&paragraphs=true&utterances=false', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: audio_url }),
-      });
-      const dgData = await dgRes.json();
-      const transcript = dgData?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+      let transcript = '';
+      try {
+        const dgRes = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&paragraphs=true&utterances=false', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: audio_url }),
+        });
+        const dgData = await dgRes.json();
+        transcript = dgData?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+      } catch (dgErr) {
+        return res.status(500).json({ error: 'Deepgram failed: ' + dgErr.message });
+      }
 
       // Step 2: Generate content with Claude
-      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: `You are a professional podcast content repurposer. Match the creator tone exactly - if sarcastic be sarcastic, if funny be funny, do not sanitize. TRANSCRIPT: ${transcript} Return ONLY a JSON object with 4 keys: linkedin (150-300 words in creator voice), twitter (thread numbered 1/ 2/ etc in creator voice), newsletter (300-500 words in creator voice), shownotes (summary + bullet takeaways in creator voice). No preamble, no markdown fences.`
-          }]
-        }),
-      });
-      const claudeData = await claudeRes.json();
-      const raw = claudeData.content[0].text.replace(/```json|```/g, '').trim();
-      const content = JSON.parse(raw);
+      let content = {};
+      try {
+        const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 2000,
+            messages: [{
+              role: 'user',
+              content: `You are a professional podcast content repurposer. Match the creator tone exactly. TRANSCRIPT: ${transcript} Return ONLY a JSON object with 4 keys: linkedin, twitter, newsletter, shownotes. No preamble, no markdown fences.`
+            }]
+          }),
+        });
+        const claudeData = await claudeRes.json();
+        if (!claudeData.content || !claudeData.content[0]) {
+          return res.status(500).json({ error: 'Claude returned no content', claudeData });
+        }
+        const raw = claudeData.content[0].text.replace(/```json|```/g, '').trim();
+        content = JSON.parse(raw);
+      } catch (claudeErr) {
+        return res.status(500).json({ error: 'Claude failed: ' + claudeErr.message });
+      }
 
       // Step 3: Save to Airtable
-      await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fields: {
-            session_id: sessionId,
-            linkedin: content.linkedin || '',
-            twitter: content.twitter || '',
-            newsletter: content.newsletter || '',
-            shownotes: content.shownotes || '',
-          }
-        }),
-      });
+      try {
+        await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fields: {
+              session_id: sessionId,
+              linkedin: content.linkedin || '',
+              twitter: content.twitter || '',
+              newsletter: content.newsletter || '',
+              shownotes: content.shownotes || '',
+            }
+          }),
+        });
+      } catch (atErr) {
+        return res.status(500).json({ error: 'Airtable failed: ' + atErr.message });
+      }
     }
 
     if (mode === 'video') {
