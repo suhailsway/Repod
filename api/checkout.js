@@ -21,8 +21,8 @@ export default async function handler(req, res) {
         },
       ],
       mode: 'subscription',
-      success_url: `https://repod-five.vercel.app/?success=true`,
-      cancel_url: `https://repod-five.vercel.app/?canceled=true`,
+      success_url: `https://repodlab.com/?success=true`,
+      cancel_url: `https://repodlab.com/?canceled=true`,
     });
 
     return res.status(200).json({ url: session.url });
