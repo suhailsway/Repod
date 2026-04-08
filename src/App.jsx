@@ -6,7 +6,8 @@ const AIRTABLE_BASE = "appHPv16UPdsghkQt";
 const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
 
 async function fetchLatestContent(sessionId) {
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?filterByFormula=${encodeURIComponent(`AND({session_id}="${sessionId}",{video_clips}!="")`)}&maxRecords=1`;
+  const formula = `AND({session_id}="${sessionId}",OR({video_clips}!="",{linkedin}!=""))`;
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
   });
@@ -41,7 +42,7 @@ export default function App() {
       const interval = setInterval(async () => {
         attempts++;
         const data = await fetchLatestContent(sessionId);
-        if (data && data.video_clips) {
+        if (data && (data.video_clips || data.linkedin)) {
           setResults(data);
           setLoadingResults(false);
           clearInterval(interval);
@@ -69,12 +70,10 @@ export default function App() {
     setSessionId(newSessionId);
 
     try {
-      // Upload video to DO server which streams to R2
       if (videoFile && inputMode === "video") {
         const CHUNK_SIZE = 5 * 1024 * 1024;
         const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
 
-        // Start upload
         const startRes = await fetch("https://upload.repodlab.com/upload/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -82,7 +81,6 @@ export default function App() {
         });
         const { upload_id } = await startRes.json();
 
-        // Upload chunks
         for (let i = 0; i < totalChunks; i++) {
           const chunk = videoFile.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
           const formData = new FormData();
@@ -95,7 +93,6 @@ export default function App() {
           });
         }
 
-        // Complete upload
         const completeRes = await fetch("https://upload.repodlab.com/upload/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -104,7 +101,7 @@ export default function App() {
         const uploadData = await completeRes.json();
         videoPath = uploadData.url;
       }
-      // Call trigger
+
       await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
