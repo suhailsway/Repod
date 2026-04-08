@@ -11,19 +11,17 @@ export default async function handler(req, res) {
     const sourceUrl = video_path || audio_url;
 
     if (mode === 'audio') {
-      // Submit to AssemblyAI and return immediately
       const aaiRes = await fetch('https://api.assemblyai.com/v2/transcript', {
         method: 'POST',
         headers: {
           'Authorization': '81cc6dcff37243c992d7f498571c24fb',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ audio_url: audio_url, speech_model: "universal-2" }),
+        body: JSON.stringify({ audio_url: audio_url, speech_models: ["universal-2"] }),
       });
       const aaiData = await aaiRes.json();
       const transcriptId = aaiData.id;
 
-      // Save to Airtable with transcript_id
       await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
         method: 'POST',
         headers: {
