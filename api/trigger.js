@@ -11,18 +11,20 @@ export default async function handler(req, res) {
     const sourceUrl = video_path || audio_url;
 
     if (mode === 'audio') {
-      // Step 1: Transcribe with Deepgram
-      const dgRes = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&paragraphs=true&utterances=false', {
+      // Step 1: Download audio then transcribe with Deepgram
+      const audioRes = await fetch(audio_url);
+      const audioBuffer = await audioRes.arrayBuffer();
+      
+      const dgRes = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&paragraphs=true', {
         method: 'POST',
         headers: {
           'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'audio/mpeg',
         },
-        body: JSON.stringify({ url: audio_url }),
+        body: audioBuffer,
       });
       const dgData = await dgRes.json();
       const transcript = dgData?.results?.channels?.[0]?.alternatives?.[0]?.transcript || 'No transcript available';
-
       // Step 2: Generate content with Claude
       const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
