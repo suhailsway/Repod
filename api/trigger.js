@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     const sourceUrl = video_path || audio_url;
 
     if (mode === 'audio') {
-      // Step 1: Submit to AssemblyAI
-      const aaiSubmit = await fetch('https://api.assemblyai.com/v2/transcript', {
+      // Submit to AssemblyAI and return immediately
+      const aaiRes = await fetch('https://api.assemblyai.com/v2/transcript', {
         method: 'POST',
         headers: {
           'Authorization': '81cc6dcff37243c992d7f498571c24fb',
@@ -20,53 +20,10 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({ audio_url: audio_url }),
       });
-      const aaiJob = await aaiSubmit.json();
-      const transcriptId = aaiJob.id;
+      const aaiData = await aaiRes.json();
+      const transcriptId = aaiData.id;
 
-      // Step 2: Poll for completion (max 3 min)
-      let transcript = '';
-      for (let i = 0; i < 60; i++) {
-        await new Promise(r => setTimeout(r, 3000));
-        const aaiPoll = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
-          headers: { 'Authorization': '81cc6dcff37243c992d7f498571c24fb' },
-        });
-        const aaiData = await aaiPoll.json();
-        if (aaiData.status === 'completed') {
-          transcript = aaiData.text || '';
-          break;
-        }
-        if (aaiData.status === 'error') break;
-      }
-
-      // Step 3: Generate content with Claude
-      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: `You are a professional podcast content repurposer. Match the creator tone exactly. TRANSCRIPT: ${transcript} Return ONLY a JSON object with 4 keys: linkedin, twitter, newsletter, shownotes. No preamble, no markdown fences.`
-          }]
-        }),
-      });
-      const claudeData = await claudeRes.json();
-      const rawText = claudeData?.content?.[0]?.text || '{}';
-
-      let content = { linkedin: '', twitter: '', newsletter: '', shownotes: '' };
-      try {
-        const cleaned = rawText.replace(/```json|```/g, '').trim();
-        content = JSON.parse(cleaned);
-      } catch(e) {
-        content.linkedin = rawText;
-      }
-
-      // Step 4: Save to Airtable
+      // Save to Airtable with transcript_id
       await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
         method: 'POST',
         headers: {
@@ -76,10 +33,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           fields: {
             session_id: sessionId,
-            linkedin: content.linkedin || '',
-            twitter: content.twitter || '',
-            newsletter: content.newsletter || '',
-            shownotes: content.shownotes || '',
+            transcript_id: transcriptId,
           }
         }),
       });
