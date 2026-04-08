@@ -71,13 +71,37 @@ export default function App() {
     try {
       // Upload video to DO server which streams to R2
       if (videoFile && inputMode === "video") {
-        const formData = new FormData();
-        formData.append("video", videoFile);
-        const uploadRes = await fetch("https://upload.repodlab.com/upload", {
+        const CHUNK_SIZE = 5 * 1024 * 1024;
+        const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
+
+        // Start upload
+        const startRes = await fetch("https://upload.repodlab.com/upload/start", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: videoFile.name }),
         });
-        const uploadData = await uploadRes.json();
+        const { upload_id } = await startRes.json();
+
+        // Upload chunks
+        for (let i = 0; i < totalChunks; i++) {
+          const chunk = videoFile.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+          const formData = new FormData();
+          formData.append("upload_id", upload_id);
+          formData.append("part_number", i + 1);
+          formData.append("chunk", chunk);
+          await fetch("https://upload.repodlab.com/upload/chunk", {
+            method: "POST",
+            body: formData,
+          });
+        }
+
+        // Complete upload
+        const completeRes = await fetch("https://upload.repodlab.com/upload/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ upload_id }),
+        });
+        const uploadData = await completeRes.json();
         videoPath = uploadData.url;
       }
       // Call trigger
