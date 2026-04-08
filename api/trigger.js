@@ -10,18 +10,60 @@ export default async function handler(req, res) {
     const sessionId = session_id || Date.now().toString();
     const sourceUrl = video_path || audio_url;
 
-    // Call audio workflow (n8n) only for audio mode
     if (mode === 'audio') {
-      await fetch('https://suhailsway.app.n8n.cloud/webhook/e57c1bcf-e93d-4e54-8851-9832520b32c3', {
+      // Step 1: Transcribe with Deepgram
+      const dgRes = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&paragraphs=true&utterances=false', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-content-mode': mode },
-        body: JSON.stringify({ audio_url, session_id: sessionId }),
+        headers: {
+          'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: audio_url }),
+      });
+      const dgData = await dgRes.json();
+      const transcript = dgData?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+
+      // Step 2: Generate content with Claude
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 2000,
+          messages: [{
+            role: 'user',
+            content: `You are a professional podcast content repurposer. Match the creator tone exactly - if sarcastic be sarcastic, if funny be funny, do not sanitize. TRANSCRIPT: ${transcript} Return ONLY a JSON object with 4 keys: linkedin (150-300 words in creator voice), twitter (thread numbered 1/ 2/ etc in creator voice), newsletter (300-500 words in creator voice), shownotes (summary + bullet takeaways in creator voice). No preamble, no markdown fences.`
+          }]
+        }),
+      });
+      const claudeData = await claudeRes.json();
+      const raw = claudeData.content[0].text.replace(/```json|```/g, '').trim();
+      const content = JSON.parse(raw);
+
+      // Step 3: Save to Airtable
+      await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fields: {
+            session_id: sessionId,
+            linkedin: content.linkedin || '',
+            twitter: content.twitter || '',
+            newsletter: content.newsletter || '',
+            shownotes: content.shownotes || '',
+          }
+        }),
       });
     }
 
-    // If video mode, call SupoClip and save to Airtable directly
     if (mode === 'video') {
-      // Create SupoClip task
       const supoclipRes = await fetch('http://159.203.99.184:8000/tasks/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'user_id': 'lW7aCYzHDCJtp3pJ5TqSD0xXsa8zXjSd' },
@@ -30,7 +72,6 @@ export default async function handler(req, res) {
       const supoclipData = await supoclipRes.json();
       const taskId = supoclipData.task_id;
 
-      // Save to Airtable
       await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
         method: 'POST',
         headers: {
