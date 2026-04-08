@@ -69,20 +69,15 @@ export default function App() {
     setSessionId(newSessionId);
 
     try {
-      console.log("handleSubmit called, videoFile:", videoFile, "inputMode:", inputMode);
       // Upload video to DO server which streams to R2
       if (videoFile && inputMode === "video") {
-        console.log("Starting upload...");
         const formData = new FormData();
         formData.append("video", videoFile);
-        console.log("Fetching upload URL...");
         const uploadRes = await fetch("https://upload.repodlab.com/upload", {
           method: "POST",
           body: formData,
         });
-        console.log("Upload response status:", uploadRes.status);
         const uploadData = await uploadRes.json();
-        console.log("Upload data:", uploadData);
         videoPath = uploadData.url;
       }
       // Call trigger
