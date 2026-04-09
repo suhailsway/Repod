@@ -273,7 +273,7 @@ export default function App() {
             </div>
 
             <div style={styles.stats}>
-              {[["2 min", "avg processing"], ["6 assets", "per episode"], ["$29/mo", "pro plan"]].map(([val, label]) => (
+              {[["5 min", "avg processing"], ["6 assets", "per episode"], ["$29/mo", "pro plan"]].map(([val, label]) => (
                 <div key={label} style={styles.stat}>
                   <span style={styles.statVal}>{val}</span>
                   <span style={styles.statLabel}>{label}</span>
@@ -423,9 +423,9 @@ const styles = {
   pricingBtn: { width: "100%", background: "transparent", border: "1px solid #333", color: "#f0f0f0", padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
   feedbackSection: { marginTop: 80, textAlign: "center", paddingBottom: 80 },
   feedbackForm: { maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 },
-  feedbackInput: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none" },
-  feedbackTextarea: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none", resize: "vertical" },
-  feedbackBtn: { background: "#111", border: "1px solid #333", color: "#888", padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
+  feedbackInput: { background: "#111", border: "1px solid #333", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none" },
+  feedbackTextarea: { background: "#111", border: "1px solid #333", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none", resize: "vertical" },
+  feedbackBtn: { background: "#E8FF47", border: "none", color: "#0a0a0a", color: "#888", padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
   processingWrap: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" },
   processingCard: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 20, padding: "52px 60px", textAlign: "center", width: "100%", maxWidth: 480 },
   spinnerWrap: { position: "relative", width: 60, height: 60, margin: "0 auto 28px" },
