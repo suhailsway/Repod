@@ -8,18 +8,14 @@ const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
 async function fetchLatestContent(sessionId) {
   const formula = `AND({session_id}="${sessionId}",OR({video_clips}!="",{linkedin}!=""))`;
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
-  });
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
   const data = await res.json();
-  if (data.records && data.records.length > 0) {
-    return data.records[0].fields;
-  }
+  if (data.records && data.records.length > 0) return data.records[0].fields;
   return null;
 }
 
 export default function App() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const [step, setStep] = useState("upload");
   const [inputMode, setInputMode] = useState("audio");
   const [audioUrl, setAudioUrl] = useState("");
@@ -32,13 +28,23 @@ export default function App() {
   const [error, setError] = useState(null);
   const [hasClips, setHasClips] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [feedbackEmail, setFeedbackEmail] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackSent, setFeedbackSent] = useState(false);
+
+  useEffect(() => {
+    if (window.location.search.includes('success=true')) {
+      setShowSuccess(true);
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
 
   useEffect(() => {
     if (step === "results" && sessionId) {
       setLoadingResults(true);
       let attempts = 0;
       const maxAttempts = 40;
-
       const interval = setInterval(async () => {
         attempts++;
         const data = await fetchLatestContent(sessionId);
@@ -51,21 +57,17 @@ export default function App() {
           clearInterval(interval);
         }
       }, 30000);
-
       return () => clearInterval(interval);
     }
   }, [step, sessionId]);
 
   const handleSubmit = async () => {
-    if (!audioUrl.trim() && !videoFile) {
-      setError("Please enter a URL");
-      return;
-    }
+    if (inputMode === "audio" && !audioUrl.trim()) { setError("Please enter a podcast URL"); return; }
+    if (inputMode === "video" && !videoFile) { setError("Please upload a video file"); return; }
     setError(null);
     setHasClips(inputMode === "video");
     let videoPath = null;
     setStep("processing");
-
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
 
@@ -73,57 +75,36 @@ export default function App() {
       if (videoFile && inputMode === "video") {
         const CHUNK_SIZE = 5 * 1024 * 1024;
         const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
-
         const startRes = await fetch("https://upload.repodlab.com/upload/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename: videoFile.name }),
         });
         const { upload_id } = await startRes.json();
-
         for (let i = 0; i < totalChunks; i++) {
           const chunk = videoFile.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
           const formData = new FormData();
           formData.append("upload_id", upload_id);
           formData.append("part_number", i + 1);
           formData.append("chunk", chunk);
-          await fetch("https://upload.repodlab.com/upload/chunk", {
-            method: "POST",
-            body: formData,
-          });
+          await fetch("https://upload.repodlab.com/upload/chunk", { method: "POST", body: formData });
         }
-
         const completeRes = await fetch("https://upload.repodlab.com/upload/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ upload_id }),
         });
         const uploadData = await completeRes.json();
         videoPath = uploadData.url;
       }
-
       await fetch("/api/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          audio_url: videoPath || audioUrl,
-          video_path: videoPath || null,
-          mode: inputMode,
-          session_id: newSessionId,
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio_url: audioUrl, video_path: videoPath || null, mode: inputMode, session_id: newSessionId }),
       });
-    } catch (err) {
-      console.log("Webhooks triggered");
-    }
+    } catch (err) { console.log("Triggered"); }
 
     let p = 0;
     const interval = setInterval(() => {
       p += Math.random() * 8;
-      if (p >= 100) {
-        p = 100;
-        clearInterval(interval);
-        setTimeout(() => setStep("results"), 400);
-      }
+      if (p >= 100) { p = 100; clearInterval(interval); setTimeout(() => setStep("results"), 400); }
       setProgress(Math.min(p, 100));
     }, 900);
   };
@@ -134,9 +115,18 @@ export default function App() {
     if (data.url) window.location.href = data.url;
   };
 
+  const handleFeedback = async () => {
+    if (!feedbackMessage.trim()) return;
+    await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblFeedback', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { email: feedbackEmail, message: feedbackMessage } }),
+    }).catch(() => {});
+    setFeedbackSent(true);
+  };
+
   const copy = (key) => {
-    const content = results ? results[key] : "";
-    navigator.clipboard.writeText(content || "");
+    navigator.clipboard.writeText(results ? results[key] || "" : "");
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
   };
@@ -148,27 +138,15 @@ export default function App() {
     { key: "shownotes", label: "Show Notes", icon: "📋" },
   ];
 
-  const clipUrls = results?.video_clips
-    ? (() => {
-        try {
-          const parsed = JSON.parse(results.video_clips);
-          return parsed.map(clip => `/api/clips?file=${clip.filename}`);
-        } catch {
-          return results.video_clips.split('\n').filter(Boolean);
-        }
-      })()
-    : [];
+  const clipUrls = results?.video_clips ? (() => {
+    try { return JSON.parse(results.video_clips).map(c => `/api/clips?file=${c.filename}`); }
+    catch { return results.video_clips.split('\n').filter(Boolean); }
+  })() : [];
 
-  const clipTitles = results?.video_clips
-    ? (() => {
-        try {
-          const parsed = JSON.parse(results.video_clips);
-          return parsed.map(clip => clip.text ? clip.text.substring(0, 80) + "..." : `Clip`);
-        } catch {
-          return results.clip_titles ? results.clip_titles.split('\n').filter(Boolean) : [];
-        }
-      })()
-    : [];
+  const clipTitles = results?.video_clips ? (() => {
+    try { return JSON.parse(results.video_clips).map(c => c.text ? c.text.substring(0, 80) + "..." : "Clip"); }
+    catch { return []; }
+  })() : [];
 
   return (
     <div style={styles.root}>
@@ -182,9 +160,10 @@ export default function App() {
         <nav style={styles.nav}>
           <SignedOut>
             <SignInButton mode="modal"><button style={styles.navBtn}>Sign in</button></SignInButton>
-            <button style={styles.subscribeBtn} onClick={handleSubscribe}>Start Free Trial →</button>
+            <SignUpButton mode="modal"><button style={styles.subscribeBtn}>Try Free →</button></SignUpButton>
           </SignedOut>
           <SignedIn>
+            <button style={styles.navBtn} onClick={handleSubscribe}>Subscribe — $29/mo</button>
             <SignOutButton><button style={styles.navBtn}>Sign out</button></SignOutButton>
           </SignedIn>
         </nav>
@@ -195,84 +174,106 @@ export default function App() {
           <div style={styles.heroWrap}>
             <div style={styles.badge}><span style={styles.badgeDot} />AI-Powered</div>
             <h1 style={styles.hero}>One podcast.<br /><span style={styles.heroAccent}>Every platform.</span></h1>
-            <p style={styles.sub}>Sign up to start repurposing your podcast content automatically.</p>
-            <SignUpButton mode="modal"><button style={styles.submitBtn}>Get Started Free →</button></SignUpButton>
+            <p style={styles.sub}>Turn your podcast into LinkedIn posts, tweets, newsletters, show notes, and viral video clips — automatically.</p>
+            <SignUpButton mode="modal"><button style={styles.submitBtn}>Try Free — 3 generations →</button></SignUpButton>
+
+            <div style={styles.pricingSection}>
+              <h2 style={styles.pricingTitle}>Simple pricing</h2>
+              <div style={styles.pricingGrid}>
+                <div style={styles.pricingCard}>
+                  <div style={styles.pricingPlan}>Free</div>
+                  <div style={styles.pricingPrice}>$0</div>
+                  <div style={styles.pricingDesc}>3 generations to try it out</div>
+                  <ul style={styles.pricingFeatures}>
+                    <li>✓ LinkedIn post</li>
+                    <li>✓ Twitter thread</li>
+                    <li>✓ Newsletter</li>
+                    <li>✓ Show notes</li>
+                    <li>✓ Video clips (video mode)</li>
+                    <li style={{color:"#555"}}>✗ Unlimited generations</li>
+                  </ul>
+                  <SignUpButton mode="modal"><button style={styles.pricingBtn}>Get started free</button></SignUpButton>
+                </div>
+                <div style={{...styles.pricingCard, borderColor:"#E8FF47"}}>
+                  <div style={{...styles.pricingPlan, color:"#E8FF47"}}>Pro</div>
+                  <div style={styles.pricingPrice}>$29<span style={{fontSize:14,color:"#666"}}>/mo</span></div>
+                  <div style={styles.pricingDesc}>For serious podcasters</div>
+                  <ul style={styles.pricingFeatures}>
+                    <li>✓ LinkedIn post</li>
+                    <li>✓ Twitter thread</li>
+                    <li>✓ Newsletter</li>
+                    <li>✓ Show notes</li>
+                    <li>✓ Video clips (video mode)</li>
+                    <li style={{color:"#E8FF47"}}>✓ Unlimited generations</li>
+                  </ul>
+                  <button style={{...styles.pricingBtn, background:"#E8FF47", color:"#0a0a0a"}} onClick={handleSubscribe}>Subscribe — $29/mo</button>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.feedbackSection}>
+              <h2 style={styles.pricingTitle}>Share your thoughts</h2>
+              <p style={{color:"#555", fontSize:13, marginBottom:20}}>We're early. Your feedback shapes what we build next.</p>
+              {feedbackSent ? (
+                <p style={{color:"#E8FF47", fontSize:14}}>✓ Thanks for your feedback!</p>
+              ) : (
+                <div style={styles.feedbackForm}>
+                  <input style={styles.feedbackInput} type="email" placeholder="Your email (optional)" value={feedbackEmail} onChange={e => setFeedbackEmail(e.target.value)} />
+                  <textarea style={styles.feedbackTextarea} placeholder="What would make REPOD better for you?" value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} rows={4} />
+                  <button style={styles.feedbackBtn} onClick={handleFeedback}>Send feedback</button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {step === "upload" && isSignedIn && (
           <div style={styles.heroWrap}>
-            <div style={styles.badge}>
-              <span style={styles.badgeDot} />
-              AI-Powered · No editing required
-            </div>
-            <h1 style={styles.hero}>
-              One podcast.<br />
-              <span style={styles.heroAccent}>Every platform.</span>
-            </h1>
-            <p style={styles.sub}>
-              Paste your podcast URL. Get LinkedIn posts, tweets, newsletters,
-              show notes, and viral short-form clips — in under 2 minutes.
-            </p>
+            {showSuccess && (
+              <div style={{background:"#0f110a",border:"1px solid #E8FF47",borderRadius:8,padding:"12px 20px",marginBottom:24,color:"#E8FF47",fontSize:13}}>
+                🎉 Welcome to REPOD Pro! You're all set.
+              </div>
+            )}
+            <div style={styles.badge}><span style={styles.badgeDot} />AI-Powered · No editing required</div>
+            <h1 style={styles.hero}>One podcast.<br /><span style={styles.heroAccent}>Every platform.</span></h1>
+            <p style={styles.sub}>Get LinkedIn posts, tweets, newsletters, show notes, and viral short-form clips — automatically.</p>
 
             <div style={styles.modeRow}>
-              <button
-                style={{ ...styles.modeBtn, ...(inputMode === "audio" ? styles.modeBtnActive : {}) }}
-                onClick={() => setInputMode("audio")}
-              >
+              <button style={{ ...styles.modeBtn, ...(inputMode === "audio" ? styles.modeBtnActive : {}) }} onClick={() => setInputMode("audio")}>
                 🎙 Audio / Podcast
-                <span style={styles.modeSub}>MP3, Buzzsprout, Anchor</span>
+                <span style={styles.modeSub}>Paste an MP3 URL</span>
               </button>
-              <button
-                style={{ ...styles.modeBtn, ...(inputMode === "video" ? styles.modeBtnActive : {}) }}
-                onClick={() => setInputMode("video")}
-              >
-                🎬 YouTube / Video
-                <span style={styles.modeSub}>Includes short-form clips</span>
+              <button style={{ ...styles.modeBtn, ...(inputMode === "video" ? styles.modeBtnActive : {}) }} onClick={() => setInputMode("video")}>
+                🎬 Video
+                <span style={styles.modeSub}>Upload MP4 file</span>
                 <span style={styles.modeBadge}>+ VIDEO CLIPS</span>
               </button>
             </div>
 
             <div style={styles.inputCard}>
-              <div style={styles.inputWrap}>
-                <span style={styles.inputIcon}>{inputMode === "audio" ? "🎙" : "🎬"}</span>
-                <input
-                  style={styles.input}
-                  type="text"
-                  placeholder={inputMode === "audio"
-                    ? "Paste your podcast URL (MP3, Buzzsprout, Anchor...)"
-                    : "Paste your YouTube or video URL..."}
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                />
-              </div>
+              {inputMode === "audio" && (
+                <div style={styles.inputWrap}>
+                  <span style={styles.inputIcon}>🎙</span>
+                  <input style={styles.input} type="text" placeholder="Paste your podcast MP3 URL..." value={audioUrl} onChange={e => setAudioUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+                </div>
+              )}
               {inputMode === "video" && (
-                <div style={{marginTop: "12px", textAlign: "center"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"8px",margin:"8px 0"}}>
-                    <div style={{flex:1,height:"1px",background:"#333"}}/>
-                    <span style={{color:"#666",fontSize:"12px"}}>or</span>
-                    <div style={{flex:1,height:"1px",background:"#333"}}/>
-                  </div>
-                  <label style={{cursor:"pointer",padding:"8px 16px",border:"1px dashed #555",borderRadius:"8px",color:"#aaa",fontSize:"13px",display:"inline-block"}}>
-                    {videoFile ? `✓ ${videoFile.name}` : "Upload MP4 file"}
-                    <input type="file" accept="video/mp4" style={{display:"none"}} onChange={(e) => setVideoFile(e.target.files[0]||null)} />
+                <div style={{textAlign:"center", padding:"16px 0"}}>
+                  <label style={{cursor:"pointer",padding:"12px 24px",border:"1px dashed #555",borderRadius:"8px",color:"#aaa",fontSize:"13px",display:"inline-block"}}>
+                    {videoFile ? `✓ ${videoFile.name}` : "Click to upload MP4 file"}
+                    <input type="file" accept="video/mp4" style={{display:"none"}} onChange={e => setVideoFile(e.target.files[0] || null)} />
                   </label>
                 </div>
               )}
               {error && <p style={styles.error}>{error}</p>}
-              <button style={styles.submitBtn} onClick={handleSubmit}>
-                Generate Content →
-              </button>
+              <button style={styles.submitBtn} onClick={handleSubmit}>Generate Content →</button>
               <p style={styles.inputHint}>
-                {inputMode === "audio"
-                  ? "Generates: LinkedIn · Twitter · Newsletter · Show Notes"
-                  : "Generates: LinkedIn · Twitter · Newsletter · Show Notes · Video Clips 🎬"}
+                {inputMode === "audio" ? "Generates: LinkedIn · Twitter · Newsletter · Show Notes" : "Generates: LinkedIn · Twitter · Newsletter · Show Notes · Video Clips 🎬"}
               </p>
             </div>
 
             <div style={styles.stats}>
-              {[["2 min", "avg processing"], ["6 assets", "per episode"], ["$0", "to start"]].map(([val, label]) => (
+              {[["2 min", "avg processing"], ["6 assets", "per episode"], ["$29/mo", "pro plan"]].map(([val, label]) => (
                 <div key={label} style={styles.stat}>
                   <span style={styles.statVal}>{val}</span>
                   <span style={styles.statLabel}>{label}</span>
@@ -290,28 +291,14 @@ export default function App() {
                 <span style={styles.spinnerIcon}>◈</span>
               </div>
               <h2 style={styles.processingTitle}>Processing your episode</h2>
-              <p style={styles.processingFile}>{audioUrl}</p>
-              <div style={styles.progressBar}>
-                <div style={{ ...styles.progressFill, width: `${progress}%` }} />
-              </div>
+              <p style={styles.processingFile}>{audioUrl || videoFile?.name}</p>
+              <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${progress}%` }} /></div>
               <p style={styles.progressPct}>{Math.round(progress)}%</p>
               <div style={styles.taskList}>
-                {[
-                  ["Transcribing audio", 20],
-                  ["Extracting key moments", 45],
-                  ["Generating written content", 65],
-                  ...(hasClips ? [["Generating video clips", 80]] : []),
-                  ["Finalising assets", 95],
-                ].map(([task, threshold]) => (
+                {[["Transcribing audio", 20], ["Extracting key moments", 45], ["Generating written content", 65], ...(hasClips ? [["Generating video clips", 80]] : []), ["Finalising assets", 95]].map(([task, threshold]) => (
                   <div key={task} style={styles.task}>
-                    <span style={{
-                      ...styles.taskDot,
-                      background: progress >= threshold ? "#E8FF47" : "#2a2a2a",
-                      boxShadow: progress >= threshold ? "0 0 8px #E8FF47" : "none",
-                    }} />
-                    <span style={{ ...styles.taskLabel, opacity: progress >= threshold ? 1 : 0.35 }}>
-                      {task}
-                    </span>
+                    <span style={{ ...styles.taskDot, background: progress >= threshold ? "#E8FF47" : "#2a2a2a", boxShadow: progress >= threshold ? "0 0 8px #E8FF47" : "none" }} />
+                    <span style={{ ...styles.taskLabel, opacity: progress >= threshold ? 1 : 0.35 }}>{task}</span>
                     {progress >= threshold && <span style={styles.taskCheck}>✓</span>}
                   </div>
                 ))}
@@ -324,21 +311,11 @@ export default function App() {
           <div style={styles.resultsWrap}>
             <div style={styles.resultsHeader}>
               <div>
-                <div style={styles.badge}>
-                  <span style={styles.badgeDot} />
-                  {loadingResults ? "Processing..." : "Ready"}
-                </div>
+                <div style={styles.badge}><span style={styles.badgeDot} />{loadingResults ? "Processing..." : "Ready"}</div>
                 <h2 style={styles.resultsTitle}>Your content is ready</h2>
                 <p style={styles.resultsSub}>{hasClips ? "6 assets generated" : "4 assets generated"}</p>
               </div>
-              <button style={styles.newBtn} onClick={() => {
-                setStep("upload");
-                setAudioUrl("");
-                setProgress(0);
-                setResults(null);
-                setHasClips(false);
-                setSessionId(null);
-              }}>
+              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); }}>
                 + New episode
               </button>
             </div>
@@ -346,9 +323,7 @@ export default function App() {
             {loadingResults ? (
               <div style={styles.loadingWrap}>
                 <div className="spinner" style={{ ...styles.spinner, position: "relative", margin: "0 auto" }} />
-                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>
-                  AI is generating your content... this takes about 3 minutes
-                </p>
+                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>AI is generating your content... this takes about 3 minutes</p>
               </div>
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
@@ -359,24 +334,15 @@ export default function App() {
                   </div>
                   <div style={styles.tabRow}>
                     {tabs.map(t => (
-                      <button
-                        key={t.key}
-                        style={{ ...styles.tab, ...(activeTab === t.key ? styles.tabActive : {}) }}
-                        onClick={() => setActiveTab(t.key)}
-                      >
+                      <button key={t.key} style={{ ...styles.tab, ...(activeTab === t.key ? styles.tabActive : {}) }} onClick={() => setActiveTab(t.key)}>
                         {t.icon} {t.label}
                       </button>
                     ))}
                   </div>
                   <div style={styles.contentBox}>
-                    <pre style={styles.contentText}>
-                      {results ? (results[activeTab] || "No content found.") : "No data available."}
-                    </pre>
+                    <pre style={styles.contentText}>{results ? (results[activeTab] || "No content found.") : "No data available."}</pre>
                   </div>
-                  <button
-                    style={{ ...styles.copyBtn, ...(copied === activeTab ? styles.copyBtnDone : {}) }}
-                    onClick={() => copy(activeTab)}
-                  >
+                  <button style={{ ...styles.copyBtn, ...(copied === activeTab ? styles.copyBtnDone : {}) }} onClick={() => copy(activeTab)}>
                     {copied === activeTab ? "✓ Copied!" : "Copy to clipboard"}
                   </button>
                 </div>
@@ -390,12 +356,7 @@ export default function App() {
                     <div style={styles.clipList}>
                       {clipUrls.map((url, index) => (
                         <div key={index} style={styles.clipCard}>
-                          <video
-                            style={styles.clipVideo}
-                            src={url}
-                            controls
-                            playsInline
-                          />
+                          <video style={styles.clipVideo} src={url} controls playsInline />
                           <div style={styles.clipInfo}>
                             <p style={styles.clipHook}>{clipTitles[index] || `Clip ${index + 1}`}</p>
                             <a href={url} download style={styles.dlLink}>↓ Download</a>
@@ -420,192 +381,56 @@ export default function App() {
 }
 
 const styles = {
-  root: {
-    minHeight: "100vh",
-    background: "#0a0a0a",
-    color: "#f0f0f0",
-    fontFamily: "'DM Mono', 'Courier New', monospace",
-    overflowX: "hidden",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "20px 40px",
-    borderBottom: "1px solid #1a1a1a",
-  },
+  root: { minHeight: "100vh", background: "#0a0a0a", color: "#f0f0f0", fontFamily: "'DM Mono', 'Courier New', monospace", overflowX: "hidden" },
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 40px", borderBottom: "1px solid #1a1a1a" },
   logo: { display: "flex", alignItems: "center", gap: 10 },
   logoMark: { fontSize: 22, color: "#E8FF47" },
   logoText: { fontSize: 18, fontWeight: 700, letterSpacing: 6, color: "#fff" },
   nav: { display: "flex", alignItems: "center", gap: 12 },
-  navBtn: {
-    background: "transparent",
-    border: "1px solid #333",
-    color: "#f0f0f0",
-    padding: "8px 20px",
-    borderRadius: 4,
-    cursor: "pointer",
-    fontSize: 13,
-    letterSpacing: 1,
-  },
-  subscribeBtn: {
-    background: "#E8FF47",
-    color: "#0a0a0a",
-    border: "none",
-    padding: "8px 20px",
-    borderRadius: 4,
-    cursor: "pointer",
-    fontSize: 13,
-    fontWeight: 700,
-    letterSpacing: 1,
-  },
+  navBtn: { background: "transparent", border: "1px solid #333", color: "#f0f0f0", padding: "8px 20px", borderRadius: 4, cursor: "pointer", fontSize: 13, letterSpacing: 1 },
+  subscribeBtn: { background: "#E8FF47", color: "#0a0a0a", border: "none", padding: "8px 20px", borderRadius: 4, cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1 },
   main: { maxWidth: 900, margin: "0 auto", padding: "60px 24px" },
   heroWrap: { textAlign: "center" },
-  badge: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    background: "#111",
-    border: "1px solid #222",
-    borderRadius: 100,
-    padding: "6px 16px",
-    fontSize: 12,
-    color: "#888",
-    letterSpacing: 1,
-    marginBottom: 32,
-  },
-  badgeDot: {
-    width: 6, height: 6,
-    borderRadius: "50%",
-    background: "#E8FF47",
-    display: "inline-block",
-    boxShadow: "0 0 6px #E8FF47",
-  },
-  hero: {
-    fontSize: "clamp(42px, 7vw, 80px)",
-    fontWeight: 800,
-    lineHeight: 1.05,
-    letterSpacing: -2,
-    marginBottom: 20,
-    fontFamily: "'DM Serif Display', Georgia, serif",
-  },
+  badge: { display: "inline-flex", alignItems: "center", gap: 8, background: "#111", border: "1px solid #222", borderRadius: 100, padding: "6px 16px", fontSize: 12, color: "#888", letterSpacing: 1, marginBottom: 32 },
+  badgeDot: { width: 6, height: 6, borderRadius: "50%", background: "#E8FF47", display: "inline-block", boxShadow: "0 0 6px #E8FF47" },
+  hero: { fontSize: "clamp(42px, 7vw, 80px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: -2, marginBottom: 20, fontFamily: "'DM Serif Display', Georgia, serif" },
   heroAccent: { color: "#E8FF47" },
-  sub: {
-    fontSize: 17,
-    color: "#888",
-    maxWidth: 520,
-    margin: "0 auto 40px",
-    lineHeight: 1.6,
-  },
-  modeRow: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 24,
-    justifyContent: "center",
-  },
-  modeBtn: {
-    background: "#0d0d0d",
-    border: "1px solid #1a1a1a",
-    color: "#666",
-    padding: "16px 24px",
-    borderRadius: 12,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 600,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: 4,
-    minWidth: 200,
-    transition: "all 0.2s ease",
-  },
-  modeBtnActive: {
-    borderColor: "#E8FF47",
-    color: "#f0f0f0",
-    background: "#0f110a",
-  },
+  sub: { fontSize: 17, color: "#888", maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.6 },
+  modeRow: { display: "flex", gap: 12, marginBottom: 24, justifyContent: "center" },
+  modeBtn: { background: "#0d0d0d", border: "1px solid #1a1a1a", color: "#666", padding: "16px 24px", borderRadius: 12, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 200, transition: "all 0.2s ease" },
+  modeBtnActive: { borderColor: "#E8FF47", color: "#f0f0f0", background: "#0f110a" },
   modeSub: { fontSize: 11, color: "#555", fontWeight: 400 },
-  modeBadge: {
-    fontSize: 9,
-    background: "#E8FF47",
-    color: "#0a0a0a",
-    padding: "2px 6px",
-    borderRadius: 4,
-    fontWeight: 700,
-    letterSpacing: 1,
-  },
-  inputCard: {
-    background: "#0d0d0d",
-    border: "1px solid #1a1a1a",
-    borderRadius: 16,
-    padding: 32,
-    marginBottom: 40,
-    textAlign: "left",
-  },
-  inputWrap: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    background: "#080808",
-    border: "1px solid #222",
-    borderRadius: 10,
-    padding: "12px 16px",
-    marginBottom: 16,
-  },
+  modeBadge: { fontSize: 9, background: "#E8FF47", color: "#0a0a0a", padding: "2px 6px", borderRadius: 4, fontWeight: 700, letterSpacing: 1 },
+  inputCard: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 16, padding: 32, marginBottom: 40, textAlign: "left" },
+  inputWrap: { display: "flex", alignItems: "center", gap: 12, background: "#080808", border: "1px solid #222", borderRadius: 10, padding: "12px 16px", marginBottom: 16 },
   inputIcon: { fontSize: 20, flexShrink: 0 },
-  input: {
-    flex: 1,
-    background: "transparent",
-    border: "none",
-    color: "#f0f0f0",
-    fontSize: 14,
-    fontFamily: "'DM Mono', monospace",
-    outline: "none",
-  },
+  input: { flex: 1, background: "transparent", border: "none", color: "#f0f0f0", fontSize: 14, fontFamily: "'DM Mono', monospace", outline: "none" },
   error: { color: "#ff6b6b", fontSize: 12, marginBottom: 12 },
-  submitBtn: {
-    width: "100%",
-    background: "#E8FF47",
-    color: "#0a0a0a",
-    border: "none",
-    padding: "14px 32px",
-    borderRadius: 10,
-    fontSize: 15,
-    fontWeight: 700,
-    cursor: "pointer",
-    letterSpacing: 1,
-    marginBottom: 12,
-  },
+  submitBtn: { width: "100%", background: "#E8FF47", color: "#0a0a0a", border: "none", padding: "14px 32px", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer", letterSpacing: 1, marginBottom: 12 },
   inputHint: { fontSize: 11, color: "#444", textAlign: "center" },
   stats: { display: "flex", justifyContent: "center", gap: 60 },
   stat: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4 },
   statVal: { fontSize: 28, fontWeight: 800, color: "#E8FF47" },
   statLabel: { fontSize: 12, color: "#555", letterSpacing: 1 },
+  pricingSection: { marginTop: 80, textAlign: "center" },
+  pricingTitle: { fontSize: 28, fontWeight: 800, marginBottom: 32, fontFamily: "'DM Serif Display', Georgia, serif" },
+  pricingGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 700, margin: "0 auto" },
+  pricingCard: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 16, padding: 32, textAlign: "left" },
+  pricingPlan: { fontSize: 12, fontWeight: 700, letterSpacing: 2, color: "#888", marginBottom: 12 },
+  pricingPrice: { fontSize: 42, fontWeight: 800, color: "#f0f0f0", marginBottom: 8 },
+  pricingDesc: { fontSize: 13, color: "#555", marginBottom: 24 },
+  pricingFeatures: { listStyle: "none", padding: 0, margin: "0 0 24px", display: "flex", flexDirection: "column", gap: 10, fontSize: 13, color: "#888" },
+  pricingBtn: { width: "100%", background: "transparent", border: "1px solid #333", color: "#f0f0f0", padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
+  feedbackSection: { marginTop: 80, textAlign: "center", paddingBottom: 80 },
+  feedbackForm: { maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 },
+  feedbackInput: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none" },
+  feedbackTextarea: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none", resize: "vertical" },
+  feedbackBtn: { background: "#111", border: "1px solid #333", color: "#888", padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
   processingWrap: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" },
-  processingCard: {
-    background: "#0d0d0d",
-    border: "1px solid #1a1a1a",
-    borderRadius: 20,
-    padding: "52px 60px",
-    textAlign: "center",
-    width: "100%",
-    maxWidth: 480,
-  },
+  processingCard: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 20, padding: "52px 60px", textAlign: "center", width: "100%", maxWidth: 480 },
   spinnerWrap: { position: "relative", width: 60, height: 60, margin: "0 auto 28px" },
-  spinner: {
-    width: 60, height: 60,
-    border: "2px solid #1a1a1a",
-    borderTop: "2px solid #E8FF47",
-    borderRadius: "50%",
-    position: "absolute",
-    top: 0, left: 0,
-  },
-  spinnerIcon: {
-    position: "absolute",
-    top: "50%", left: "50%",
-    transform: "translate(-50%, -50%)",
-    fontSize: 20, color: "#E8FF47",
-  },
+  spinner: { width: 60, height: 60, border: "2px solid #1a1a1a", borderTop: "2px solid #E8FF47", borderRadius: "50%", position: "absolute", top: 0, left: 0 },
+  spinnerIcon: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: 20, color: "#E8FF47" },
   processingTitle: { fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: "'DM Serif Display', Georgia, serif" },
   processingFile: { fontSize: 11, color: "#555", marginBottom: 32, wordBreak: "break-all" },
   progressBar: { height: 3, background: "#1a1a1a", borderRadius: 4, overflow: "hidden", marginBottom: 8 },
@@ -621,17 +446,7 @@ const styles = {
   resultsHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 },
   resultsTitle: { fontSize: 32, fontWeight: 800, marginTop: 10, marginBottom: 4, fontFamily: "'DM Serif Display', Georgia, serif" },
   resultsSub: { fontSize: 13, color: "#555" },
-  newBtn: {
-    background: "transparent",
-    border: "1px solid #E8FF47",
-    color: "#E8FF47",
-    padding: "10px 24px",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 13,
-    fontWeight: 600,
-    letterSpacing: 1,
-  },
+  newBtn: { background: "transparent", border: "1px solid #E8FF47", color: "#E8FF47", padding: "10px 24px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, letterSpacing: 1 },
   resultsGrid: { display: "grid", gap: 20 },
   panel: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 },
   panelHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
@@ -660,5 +475,5 @@ const css = `
   body { background: #0a0a0a; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { animation: spin 1s linear infinite; }
-  input::placeholder { color: #333; }
+  input::placeholder, textarea::placeholder { color: #333; }
 `;
