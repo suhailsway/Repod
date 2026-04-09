@@ -423,8 +423,8 @@ const styles = {
   pricingBtn: { width: "100%", background: "transparent", border: "1px solid #333", color: "#f0f0f0", padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
   feedbackSection: { marginTop: 80, textAlign: "center", paddingBottom: 80 },
   feedbackForm: { maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 },
-  feedbackInput: { background: "#111", border: "1px solid #333", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none" },
-  feedbackTextarea: { background: "#111", border: "1px solid #333", borderRadius: 8, padding: "12px 16px", color: "#f0f0f0", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none", resize: "vertical" },
+  ffeedbackInput: { background: "#1a1a1a", border: "1px solid #444", borderRadius: 8, padding: "12px 16px", color: "#ffffff", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none" },
+  feedbackTextarea: { background: "#1a1a1a", border: "1px solid #444", borderRadius: 8, padding: "12px 16px", color: "#ffffff", fontSize: 13, fontFamily: "'DM Mono', monospace", outline: "none", resize: "vertical" },
   feedbackBtn: { background: "#E8FF47", border: "none", color: "#0a0a0a", color: "#888", padding: "12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
   processingWrap: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" },
   processingCard: { background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 20, padding: "52px 60px", textAlign: "center", width: "100%", maxWidth: 480 },
@@ -475,5 +475,4 @@ const css = `
   body { background: #0a0a0a; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { animation: spin 1s linear infinite; }
-  input::placeholder, textarea::placeholder { color: #333; }
-`;
+input::placeholder, textarea::placeholder { color: #666; }`;
