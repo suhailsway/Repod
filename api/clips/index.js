@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   const file = req.query.file;
   const url = `http://159.223.166.171:8000/clips/${file}`;
 
-  const headers = {};
+  const headers = { 'user_id': 'repod-user-001' };
   if (req.headers.range) {
     headers['Range'] = req.headers.range;
   }
@@ -23,4 +23,4 @@ export default async function handler(req, res) {
 
   const buffer = await response.arrayBuffer();
   res.send(Buffer.from(buffer));
-}}
+}
