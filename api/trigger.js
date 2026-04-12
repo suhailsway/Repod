@@ -11,7 +11,6 @@ export default async function handler(req, res) {
     const sourceUrl = video_path || audio_url;
 
     if (mode === 'audio') {
-      // Step 1: Transcribe with Deepgram
       const dgRes = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&paragraphs=true', {
         method: 'POST',
         headers: {
@@ -23,7 +22,6 @@ export default async function handler(req, res) {
       const dgData = await dgRes.json();
       const transcript = dgData?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
 
-      // Step 2: Generate content with Claude
       const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -34,9 +32,10 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 2000,
+          system: 'You are a JSON generator. You only output raw valid JSON. No explanations, no markdown, no backticks, no preamble. Just a JSON object.',
           messages: [{
             role: 'user',
-            content: `You are a professional podcast content repurposer. Match the creator tone exactly. TRANSCRIPT: ${transcript} Return ONLY a JSON object with 4 keys: linkedin (150-300 words), twitter (thread numbered 1/ 2/ etc), newsletter (300-500 words), shownotes (summary + bullet takeaways). No markdown, no backticks, just raw JSON.`,
+            content: `Generate content from this podcast transcript. Return ONLY a raw JSON object with exactly these 4 keys: "linkedin" (150-300 word post), "twitter" (numbered thread 1/ 2/ etc), "newsletter" (300-500 words), "shownotes" (summary + bullet takeaways). TRANSCRIPT: ${transcript}`,
           }],
         }),
       });
@@ -44,7 +43,6 @@ export default async function handler(req, res) {
       const raw = claudeData.content?.[0]?.text || '{}';
       const content = JSON.parse(raw);
 
-      // Step 3: Save to Airtable
       await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
         method: 'POST',
         headers: {
