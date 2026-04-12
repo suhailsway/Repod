@@ -35,49 +35,15 @@ export default async function handler(req, res) {
           system: 'You are a JSON generator. You only output raw valid JSON. No explanations, no markdown, no backticks, no preamble. Just a JSON object.',
           messages: [{
             role: 'user',
-            content: `Generate content from this podcast transcript. Return ONLY a raw JSON object with exactly these 4 keys: "linkedin" (150-300 word post), "twitter" (numbered thread 1/ 2/ etc), "newsletter" (300-500 words), "shownotes" (summary + bullet takeaways). TRANSCRIPT: ${transcript}`,
+            content: `Generate content from this podcast transcript. Return ONLY a raw JSON object with exactly these 4 keys: "linkedin", "twitter", "newsletter", "shownotes". TRANSCRIPT: ${transcript}`,
           }],
         }),
       });
       const claudeData = await claudeRes.json();
       const raw = claudeData.content?.[0]?.text || '{}';
-      const content = JSON.parse(raw);
 
-      await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fields: {
-            session_id: sessionId,
-            linkedin: content.linkedin || '',
-            twitter: content.twitter || '',
-            newsletter: content.newsletter || '',
-            shownotes: content.shownotes || '',
-          }
-        }),
-      });
-    }
-
-    if (mode === 'video') {
-      const supoclipRes = await fetch('http://159.203.99.184:8000/tasks/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'user_id': 'lW7aCYzHDCJtp3pJ5TqSD0xXsa8zXjSd' },
-        body: JSON.stringify({ source: { url: sourceUrl, type: "youtube" } }),
-      });
-      const supoclipData = await supoclipRes.json();
-      const taskId = supoclipData.task_id;
-
-      await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fields: { session_id: sessionId, task_id: taskId } }),
-      });
+      // Return raw for debugging
+      return res.status(200).json({ success: true, sessionId, raw });
     }
 
     return res.status(200).json({ success: true, sessionId });
