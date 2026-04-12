@@ -73,7 +73,7 @@ export default function App() {
 
     try {
       if (videoFile && inputMode === "video") {
-        const CHUNK_SIZE = 5 * 1024 * 1024;
+        const CHUNK_SIZE = 1 * 1024 * 1024;
         const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
         const startRes = await fetch("https://upload.repodlab.com/upload/start", {
           method: "POST", headers: { "Content-Type": "application/json" },
