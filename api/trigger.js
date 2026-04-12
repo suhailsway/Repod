@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     if (mode === 'video') {
       const supoclipRes = await fetch('http://159.223.166.171:8000/tasks/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'user_id': 'lW7aCYzHDCJtp3pJ5TqSD0xXsa8zXjSd' },
+        headers: { 'Content-Type': 'application/json', 'user_id': 'repod-user-001' },
         body: JSON.stringify({ source: { url: sourceUrl, type: "youtube" } }),
       });
       const supoclipData = await supoclipRes.json();
