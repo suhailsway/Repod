@@ -86,7 +86,7 @@ export default function App() {
           formData.append("upload_id", upload_id);
           formData.append("part_number", i + 1);
           formData.append("chunk", chunk);
-          await fetch("https://upload.repodlab.com/upload/chunk", { method: "POST", body: formData });
+          let chunkSuccess = false; for (let retry = 0; retry < 3; retry++) { try { const r = await fetch("https://upload.repodlab.com/upload/chunk", { method: "POST", body: formData }); if (r.ok) { chunkSuccess = true; break; } } catch(e) { if (retry === 2) throw e; await new Promise(res => setTimeout(res, 1000 * (retry + 1))); } }
         }
         const completeRes = await fetch("https://upload.repodlab.com/upload/complete", {
           method: "POST", headers: { "Content-Type": "application/json" },
