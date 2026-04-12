@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   const file = req.query.file;
-  const url = `http://159.203.99.184:8000/clips/${file}`;
+  const url = `http://159.223.166.171:8000/clips/${file}`;
 
   const headers = {};
   if (req.headers.range) {
