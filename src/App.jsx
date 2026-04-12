@@ -75,22 +75,25 @@ export default function App() {
       if (videoFile && inputMode === "video") {
         const CHUNK_SIZE = 5 * 1024 * 1024;
         const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
-        const startRes = await fetch("https://upload.repodlab.com/upload/start", {
+        const startRes = await fetch("/api/upload-url", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: videoFile.name }),
+          body: JSON.stringify({ action: "start", filename: videoFile.name, contentType: "video/mp4" }),
         });
-        const { upload_id } = await startRes.json();
+        const { uploadId, key } = await startRes.json();
+        const parts = [];
         for (let i = 0; i < totalChunks; i++) {
           const chunk = videoFile.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-          const formData = new FormData();
-          formData.append("upload_id", upload_id);
-          formData.append("part_number", i + 1);
-          formData.append("chunk", chunk);
-          let chunkSuccess = false; for (let retry = 0; retry < 3; retry++) { try { const r = await fetch("https://upload.repodlab.com/upload/chunk", { method: "POST", body: formData }); if (r.ok) { chunkSuccess = true; break; } } catch(e) { if (retry === 2) throw e; await new Promise(res => setTimeout(res, 1000 * (retry + 1))); } }
+          const partRes = await fetch("/api/upload-url", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "part", key, uploadId, partNumber: i + 1 }),
+          });
+          const { signedUrl } = await partRes.json();
+          const uploadRes = await fetch(signedUrl, { method: "PUT", body: chunk });
+          parts.push({ PartNumber: i + 1, ETag: uploadRes.headers.get("ETag") });
         }
-        const completeRes = await fetch("https://upload.repodlab.com/upload/complete", {
+        const completeRes = await fetch("/api/upload-url", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ upload_id }),
+          body: JSON.stringify({ action: "complete", key, uploadId, parts }),
         });
         const uploadData = await completeRes.json();
         videoPath = uploadData.url;
