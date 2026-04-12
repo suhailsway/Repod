@@ -11,17 +11,40 @@ export default async function handler(req, res) {
     const sourceUrl = video_path || audio_url;
 
     if (mode === 'audio') {
-      const aaiRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+      // Step 1: Transcribe with Deepgram
+      const dgRes = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&paragraphs=true', {
         method: 'POST',
         headers: {
-          'Authorization': '81cc6dcff37243c992d7f498571c24fb',
+          'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ audio_url: audio_url, speech_models: ["universal-2"] }),
+        body: JSON.stringify({ url: audio_url }),
       });
-      const aaiData = await aaiRes.json();
-      const transcriptId = aaiData.id;
+      const dgData = await dgRes.json();
+      const transcript = dgData?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
 
+      // Step 2: Generate content with Claude
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 2000,
+          messages: [{
+            role: 'user',
+            content: `You are a professional podcast content repurposer. Match the creator tone exactly. TRANSCRIPT: ${transcript} Return ONLY a JSON object with 4 keys: linkedin (150-300 words), twitter (thread numbered 1/ 2/ etc), newsletter (300-500 words), shownotes (summary + bullet takeaways). No markdown, no backticks, just raw JSON.`,
+          }],
+        }),
+      });
+      const claudeData = await claudeRes.json();
+      const raw = claudeData.content?.[0]?.text || '{}';
+      const content = JSON.parse(raw);
+
+      // Step 3: Save to Airtable
       await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
         method: 'POST',
         headers: {
@@ -31,7 +54,10 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           fields: {
             session_id: sessionId,
-            transcript_id: transcriptId,
+            linkedin: content.linkedin || '',
+            twitter: content.twitter || '',
+            newsletter: content.newsletter || '',
+            shownotes: content.shownotes || '',
           }
         }),
       });
