@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       const supoclipRes = await fetch('http://159.223.166.171:8000/tasks/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'user_id': 'repod-user-001' },
-        body: JSON.stringify({ source: { url: sourceUrl, type: "youtube" }, font_size: 48 }),
+        body: JSON.stringify({ source: { url: sourceUrl, type: "youtube" }, font_options: { font_size: 48 } }),
       });
       const supoclipData = await supoclipRes.json();
       const taskId = supoclipData.task_id;
