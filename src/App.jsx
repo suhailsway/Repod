@@ -63,60 +63,38 @@ export default function App() {
     }
   }, [step, sessionId]);
 
-  const uploadWithUppy = (file) => {
-    return new Promise((resolve, reject) => {
-      const uppy = new Uppy({ autoProceed: true })
-        .use(AwsS3, {
-          shouldUseMultipart: (file) => file.size > 5 * 1024 * 1024,
-          async getUploadParameters(file) {
-            const res = await fetch("/api/upload-url", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "start", filename: file.name, contentType: file.type }),
-            });
-            const { url, fields, key } = await res.json();
-            return { method: "PUT", url, fields, headers: {} };
-          },
-          async createMultipartUpload(file) {
-            const res = await fetch("/api/upload-url", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "start", filename: file.name, contentType: file.type }),
-            });
-            const { uploadId, key } = await res.json();
-            return { uploadId, key };
-          },
-          async signPart(file, { uploadId, key, partNumber }) {
-            const res = await fetch("/api/upload-url", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "part", key, uploadId, partNumber }),
-            });
-            const { signedUrl } = await res.json();
-            return { url: signedUrl };
-          },
-          async completeMultipartUpload(file, { uploadId, key, parts }) {
-            const res = await fetch("/api/upload-url", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "complete", key, uploadId, parts }),
-            });
-            const data = await res.json();
-            return { location: data.url };
-          },
-          async abortMultipartUpload(file, { uploadId, key }) {},
-        });
+  const uploadWithUppy = async (file) => {
+    const CHUNK_SIZE = 5 * 1024 * 1024;
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-      uppy.addFile({ name: file.name, type: file.type, data: file });
-
-      uppy.on("upload-success", (file, response) => {
-        resolve(response.uploadURL || response.body?.location);
-      });
-
-      uppy.on("upload-error", (file, error) => {
-        reject(error);
-      });
+    const startRes = await fetch("/api/upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "start", filename: file.name }),
     });
+    const { uploadId, key } = await startRes.json();
+
+    const parts = [];
+    for (let i = 0; i < totalChunks; i++) {
+      const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+      const arrayBuffer = await chunk.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const partRes = await fetch("/api/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "part", key, uploadId, partNumber: i + 1, chunk: base64 }),
+      });
+      const { etag } = await partRes.json();
+      parts.push({ partNumber: i + 1, etag });
+    }
+
+    const completeRes = await fetch("/api/upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete", key, uploadId, parts }),
+    });
+    const { url } = await completeRes.json();
+    return url;
   };
 
   const handleSubmit = async () => {
