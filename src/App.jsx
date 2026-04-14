@@ -80,7 +80,10 @@ export default function App() {
     for (let i = 0; i < totalChunks; i++) {
       const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
       const arrayBuffer = await chunk.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const uint8 = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let j = 0; j < uint8.length; j++) binary += String.fromCharCode(uint8[j]);
+      const base64 = btoa(binary);
       const partRes = await fetch("/api/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
