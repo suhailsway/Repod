@@ -22,6 +22,7 @@ export default function App() {
   const [inputMode, setInputMode] = useState("audio");
   const [audioUrl, setAudioUrl] = useState("");
   const [videoFile, setVideoFile] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("linkedin");
   const [copied, setCopied] = useState(null);
@@ -119,7 +120,7 @@ export default function App() {
   };
 
   const handleSubmit = async () => {
-    if (inputMode === "audio" && !audioUrl.trim()) { setError("Please enter a podcast URL"); return; }
+    if (inputMode === "audio" && !audioUrl.trim() && !audioFile) { setError("Please enter a podcast URL or upload an MP3 file"); return; }
     if (inputMode === "video" && !videoFile) { setError("Please upload a video file"); return; }
     setError(null);
     setHasClips(inputMode === "video");
@@ -141,6 +142,15 @@ export default function App() {
           setUploadProgress(pct);
         });
         setIsUploading(false);
+      }
+      if (audioFile && inputMode === "audio") {
+        setIsUploading(true);
+        setUploadProgress(0);
+        const uploadedUrl = await uploadWithUppy(audioFile, (pct) => {
+          setUploadProgress(pct);
+        });
+        setIsUploading(false);
+        setAudioUrl(uploadedUrl);
       }
       await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -299,9 +309,16 @@ export default function App() {
 
             <div style={styles.inputCard}>
               {inputMode === "audio" && (
-                <div style={styles.inputWrap}>
-                  <span style={styles.inputIcon}>🎙</span>
-                  <input style={styles.input} type="text" placeholder="Paste your podcast MP3 URL..." value={audioUrl} onChange={e => setAudioUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+                <div>
+                  <div style={styles.inputWrap}>
+                    <span style={styles.inputIcon}>🎙</span>
+                    <input style={styles.input} type="text" placeholder="Paste your podcast MP3 URL..." value={audioUrl} onChange={e => { setAudioUrl(e.target.value); setAudioFile(null); }} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+                  </div>
+                  <div style={{textAlign:"center", margin:"12px 0", color:"#444", fontSize:12}}>— or upload an MP3 file —</div>
+                  <label style={{cursor:"pointer", padding:"12px 24px", border:"1px dashed #555", borderRadius:"8px", color:"#aaa", fontSize:"13px", display:"block", textAlign:"center"}}>
+                    {audioFile ? `✓ ${audioFile.name}` : "Click to upload MP3 file"}
+                    <input type="file" accept="audio/mp3,audio/mpeg" style={{display:"none"}} onChange={e => { setAudioFile(e.target.files[0] || null); setAudioUrl(""); }} />
+                  </label>
                 </div>
               )}
               {inputMode === "video" && (
