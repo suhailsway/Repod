@@ -46,6 +46,8 @@ export default function App() {
     const savedSession = localStorage.getItem('repod_session_id');
     if (savedSession) {
       const savedHasClips = localStorage.getItem('repod_has_clips') === 'true';
+      const savedDuration = parseInt(localStorage.getItem('repod_video_duration') || '0');
+      setVideoDuration(savedDuration);
       setSessionId(savedSession);
       setHasClips(savedHasClips);
       setLoadingResults(true);
@@ -126,6 +128,7 @@ export default function App() {
     setSessionId(newSessionId);
     localStorage.setItem('repod_session_id', newSessionId);
     localStorage.setItem('repod_has_clips', String(inputMode === 'video'));
+    localStorage.setItem('repod_video_duration', String(videoDuration));
     if (videoFile && inputMode === "video") {
       setIsUploading(true);
       setUploadProgress(0);
