@@ -1,14 +1,16 @@
 import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+const R2_PUBLIC_ENDPOINT = "https://edd674a7e783406f363d0e75a44d6390.r2.cloudflarestorage.com";
+
 const s3 = new S3Client({
   region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
+  endpoint: R2_PUBLIC_ENDPOINT,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
-  forcePathStyle: true,
+  forcePathStyle: false,
   requestChecksumCalculation: "WHEN_REQUIRED",
   responseChecksumValidation: "WHEN_REQUIRED",
 });
@@ -31,17 +33,9 @@ export default async function handler(req, res) {
   if (action === 'part') {
     const cmd = new UploadPartCommand({ 
       Bucket: "repod", Key: key, UploadId: uploadId, PartNumber: partNumber,
-      ChecksumAlgorithm: undefined,
     });
-    const signedUrl = await getSignedUrl(s3, cmd, { 
-      expiresIn: 3600,
-      unhoistableHeaders: new Set(["x-amz-checksum-algorithm", "x-amz-sdk-checksum-algorithm"]),
-    });
-    const publicSignedUrl = signedUrl.replace(
-      process.env.R2_ENDPOINT,
-      'https://edd674a7e783406f363d0e75a44d6390.r2.cloudflarestorage.com'
-    );
-    return res.status(200).json({ signedUrl: publicSignedUrl });
+    const signedUrl = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
+    return res.status(200).json({ signedUrl });
   }
 
   if (action === 'complete') {
