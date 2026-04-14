@@ -194,6 +194,7 @@ export default function App() {
     { key: "twitter", label: "Twitter / X", icon: "𝕏" },
     { key: "newsletter", label: "Newsletter", icon: "✉️" },
     { key: "shownotes", label: "Show Notes", icon: "📋" },
+    { key: "facebook", label: "Facebook", icon: "👥" },
   ];
 
   const clipUrls = results?.video_clips ? (() => {
@@ -366,9 +367,11 @@ export default function App() {
               </div>
               <h2 style={styles.processingTitle}>{isUploading ? "Uploading your episode" : "Processing your episode"}</h2>
               <p style={styles.processingFile}>{audioUrl || videoFile?.name}</p>
-              {videoFile && !isUploading && videoDuration > 0 && (
+              {!isUploading && (videoFile && videoDuration > 0 || audioFile) && (
                 <p style={{fontSize:11, color:"#555", marginBottom:8}}>
-                  Est. ~{Math.max(10, Math.round(videoDuration * 0.25))} min processing
+                  {audioFile
+                    ? `Est. ~${Math.max(5, Math.round(audioFile.size / (1024*1024*10)))} min processing`
+                    : `Est. ~${Math.max(10, Math.round(videoDuration * 0.25))} min processing`}
                 </p>
               )}
               <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${isUploading ? uploadProgress : progress}%`, transition: isUploading ? "width 0.2s ease" : "width 0.3s ease" }} /></div>
