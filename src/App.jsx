@@ -66,10 +66,8 @@ export default function App() {
   const WORKER_URL = "https://throbbing-shadow-50b6.sohail31314.workers.dev";
 
   const uploadWithUppy = async (file) => {
-    console.log("Starting upload for:", file.name, file.size);
     const CHUNK_SIZE = 5 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    console.log("Total chunks:", totalChunks);
 
     const startRes = await fetch(`${WORKER_URL}/start`, {
       method: "POST",
@@ -118,7 +116,6 @@ export default function App() {
     try {
       if (videoFile && inputMode === "video") {
         videoPath = await uploadWithUppy(videoFile);
-        console.log("Upload complete, videoPath:", videoPath);
       }
       await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
