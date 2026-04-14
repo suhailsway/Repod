@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser, SignInButton, SignOutButton, SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-react";
+import Uppy from "@uppy/core";
+import AwsS3 from "@uppy/aws-s3";
 
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
 const AIRTABLE_BASE = "appHPv16UPdsghkQt";
@@ -61,6 +63,62 @@ export default function App() {
     }
   }, [step, sessionId]);
 
+  const uploadWithUppy = (file) => {
+    return new Promise((resolve, reject) => {
+      const uppy = new Uppy({ autoProceed: true })
+        .use(AwsS3, {
+          shouldUseMultipart: (file) => file.size > 5 * 1024 * 1024,
+          async getUploadParameters(file) {
+            const res = await fetch("/api/upload-url", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "start", filename: file.name, contentType: file.type }),
+            });
+            const { url, fields, key } = await res.json();
+            return { method: "PUT", url, fields, headers: {} };
+          },
+          async createMultipartUpload(file) {
+            const res = await fetch("/api/upload-url", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "start", filename: file.name, contentType: file.type }),
+            });
+            const { uploadId, key } = await res.json();
+            return { uploadId, key };
+          },
+          async signPart(file, { uploadId, key, partNumber }) {
+            const res = await fetch("/api/upload-url", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "part", key, uploadId, partNumber }),
+            });
+            const { signedUrl } = await res.json();
+            return { url: signedUrl };
+          },
+          async completeMultipartUpload(file, { uploadId, key, parts }) {
+            const res = await fetch("/api/upload-url", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "complete", key, uploadId, parts }),
+            });
+            const data = await res.json();
+            return { location: data.url };
+          },
+          async abortMultipartUpload(file, { uploadId, key }) {},
+        });
+
+      uppy.addFile({ name: file.name, type: file.type, data: file });
+
+      uppy.on("upload-success", (file, response) => {
+        resolve(response.uploadURL || response.body?.location);
+      });
+
+      uppy.on("upload-error", (file, error) => {
+        reject(error);
+      });
+    });
+  };
+
   const handleSubmit = async () => {
     if (inputMode === "audio" && !audioUrl.trim()) { setError("Please enter a podcast URL"); return; }
     if (inputMode === "video" && !videoFile) { setError("Please upload a video file"); return; }
@@ -73,30 +131,7 @@ export default function App() {
 
     try {
       if (videoFile && inputMode === "video") {
-        const CHUNK_SIZE = 5 * 1024 * 1024;
-        const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
-        const startRes = await fetch("/api/upload-url", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "start", filename: videoFile.name, contentType: "video/mp4" }),
-        });
-        const { uploadId, key } = await startRes.json();
-        const parts = [];
-        for (let i = 0; i < totalChunks; i++) {
-          const chunk = videoFile.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-          const partRes = await fetch("/api/upload-url", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "part", key, uploadId, partNumber: i + 1 }),
-          });
-          const { signedUrl } = await partRes.json();
-          const uploadRes = await fetch(signedUrl, { method: "PUT", body: chunk });
-          parts.push({ PartNumber: i + 1, ETag: uploadRes.headers.get("ETag") });
-        }
-        const completeRes = await fetch("/api/upload-url", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "complete", key, uploadId, parts }),
-        });
-        const uploadData = await completeRes.json();
-        videoPath = uploadData.url;
+        videoPath = await uploadWithUppy(videoFile);
       }
       await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
