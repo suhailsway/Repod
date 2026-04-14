@@ -73,7 +73,7 @@ export default function App() {
     }
   }, [step, sessionId]);
 
-  const WORKER_URL = "https://throbbing-shadow-50b6.sohail31314.workers.dev";
+  const WORKER_URL = "https://upload.repodlab.com";
 
   const uploadWithUppy = async (file, onProgress) => {
     const CHUNK_SIZE = 5 * 1024 * 1024;
