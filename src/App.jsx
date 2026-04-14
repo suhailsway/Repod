@@ -95,8 +95,9 @@ export default function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "complete", key, uploadId, parts }),
     });
-    const { url } = await completeRes.json();
-    return url;
+    const completeData = await completeRes.json();
+    console.log("Complete response:", completeData);
+    return completeData.url;
   };
 
   const handleSubmit = async () => {
