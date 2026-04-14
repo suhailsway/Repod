@@ -32,6 +32,7 @@ export default function App() {
   const [sessionId, setSessionId] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -304,7 +305,16 @@ export default function App() {
                 <div style={{textAlign:"center", padding:"16px 0"}}>
                   <label style={{cursor:"pointer",padding:"12px 24px",border:"1px dashed #555",borderRadius:"8px",color:"#aaa",fontSize:"13px",display:"inline-block"}}>
                     {videoFile ? `✓ ${videoFile.name}` : "Click to upload MP4 file"}
-                    <input type="file" accept="video/mp4" style={{display:"none"}} onChange={e => setVideoFile(e.target.files[0] || null)} />
+                    <input type="file" accept="video/mp4" style={{display:"none"}} onChange={e => {
+                    const f = e.target.files[0] || null;
+                    setVideoFile(f);
+                    if (f) {
+                      const v = document.createElement("video");
+                      v.preload = "metadata";
+                      v.onloadedmetadata = () => { setVideoDuration(Math.round(v.duration / 60)); URL.revokeObjectURL(v.src); };
+                      v.src = URL.createObjectURL(f);
+                    }
+                  }} />
                   </label>
                 </div>
               )}
@@ -374,7 +384,7 @@ export default function App() {
             {loadingResults ? (
               <div style={styles.loadingWrap}>
                 <div className="spinner" style={{ ...styles.spinner, position: "relative", margin: "0 auto" }} />
-                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>AI is generating your content... this may take 15-60 minutes depending on video length</p>
+                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>{videoDuration > 0 ? `AI is generating your content... est. ~${Math.max(10, Math.round(videoDuration * 0.25))} min` : "AI is generating your content..."}</p>
               </div>
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
