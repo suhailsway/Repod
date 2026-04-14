@@ -63,16 +63,18 @@ export default function App() {
     }
   }, [step, sessionId]);
 
+  const WORKER_URL = "https://throbbing-shadow-50b6.sohail31314.workers.dev";
+
   const uploadWithUppy = async (file) => {
     console.log("Starting upload for:", file.name, file.size);
     const CHUNK_SIZE = 5 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     console.log("Total chunks:", totalChunks);
 
-    const startRes = await fetch("/api/upload-url", {
+    const startRes = await fetch(`${WORKER_URL}/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "start", filename: file.name }),
+      body: JSON.stringify({ filename: file.name }),
     });
     const { uploadId, key } = await startRes.json();
 
@@ -84,19 +86,19 @@ export default function App() {
       let binary = '';
       for (let j = 0; j < uint8.length; j++) binary += String.fromCharCode(uint8[j]);
       const base64 = btoa(binary);
-      const partRes = await fetch("/api/upload-url", {
+      const partRes = await fetch(`${WORKER_URL}/part`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "part", key, uploadId, partNumber: i + 1, chunk: base64 }),
+        body: JSON.stringify({ key, uploadId, partNumber: i + 1, chunk: base64 }),
       });
       const { etag } = await partRes.json();
       parts.push({ partNumber: i + 1, etag });
     }
 
-    const completeRes = await fetch("/api/upload-url", {
+    const completeRes = await fetch(`${WORKER_URL}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "complete", key, uploadId, parts }),
+      body: JSON.stringify({ key, uploadId, parts }),
     });
     const completeData = await completeRes.json();
     console.log("Complete response:", completeData);
