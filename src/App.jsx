@@ -93,6 +93,7 @@ export default function App() {
       });
       const { etag } = await partRes.json();
       parts.push({ partNumber: i + 1, etag });
+      if (onProgress) onProgress(Math.round(((i + 1) / totalChunks) * 100));
     }
 
     const completeRes = await fetch(`${WORKER_URL}/complete`, {
