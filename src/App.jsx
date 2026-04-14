@@ -64,8 +64,10 @@ export default function App() {
   }, [step, sessionId]);
 
   const uploadWithUppy = async (file) => {
+    console.log("Starting upload for:", file.name, file.size);
     const CHUNK_SIZE = 5 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    console.log("Total chunks:", totalChunks);
 
     const startRes = await fetch("/api/upload-url", {
       method: "POST",
