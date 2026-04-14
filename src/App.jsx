@@ -42,6 +42,12 @@ export default function App() {
       setShowSuccess(true);
       window.history.replaceState({}, '', '/');
     }
+    const savedSession = localStorage.getItem('repod_session_id');
+    if (savedSession) {
+      setSessionId(savedSession);
+      setStep('results');
+      setLoadingResults(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -114,6 +120,7 @@ export default function App() {
     let videoPath = null;
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
+    localStorage.setItem('repod_session_id', newSessionId);
     if (videoFile && inputMode === "video") {
       setIsUploading(true);
       setUploadProgress(0);
@@ -347,7 +354,7 @@ export default function App() {
                 <h2 style={styles.resultsTitle}>Your content is ready</h2>
                 <p style={styles.resultsSub}>{hasClips ? "6 assets generated" : "4 assets generated"}</p>
               </div>
-              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); }}>
+              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); localStorage.removeItem('repod_session_id'); }}>
                 + New episode
               </button>
             </div>
