@@ -67,7 +67,7 @@ export default function App() {
 
   const WORKER_URL = "https://throbbing-shadow-50b6.sohail31314.workers.dev";
 
-  const uploadWithUppy = async (file) => {
+  const uploadWithUppy = async (file, onProgress) => {
     const CHUNK_SIZE = 5 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
