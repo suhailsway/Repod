@@ -31,6 +31,8 @@ export default function App() {
   const [hasClips, setHasClips] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -115,9 +117,12 @@ export default function App() {
 
     try {
       if (videoFile && inputMode === "video") {
+        setIsUploading(true);
+        setUploadProgress(0);
         videoPath = await uploadWithUppy(videoFile, (pct) => {
-          setProgress(Math.min(pct * 0.5, 49));
+          setUploadProgress(pct);
         });
+        setIsUploading(false);
       }
       await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -314,10 +319,10 @@ export default function App() {
                 <div className="spinner" style={styles.spinner} />
                 <span style={styles.spinnerIcon}>◈</span>
               </div>
-              <h2 style={styles.processingTitle}>{progress < 50 && videoFile ? "Uploading your episode" : "Processing your episode"}</h2>
+              <h2 style={styles.processingTitle}>{isUploading ? "Uploading your episode" : "Processing your episode"}</h2>
               <p style={styles.processingFile}>{audioUrl || videoFile?.name}</p>
-              <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${progress}%` }} /></div>
-              <p style={styles.progressPct}>{Math.round(progress)}%</p>
+              <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${isUploading ? uploadProgress : progress}%`, transition: isUploading ? "width 0.2s ease" : "width 0.3s ease" }} /></div>
+              <p style={styles.progressPct}>{isUploading ? `Uploading... ${uploadProgress}%` : `${Math.round(progress)}%`}</p>
               <div style={styles.taskList}>
                 {[["Transcribing audio", 20], ["Extracting key moments", 45], ["Generating written content", 65], ...(hasClips ? [["Generating video clips", 80]] : []), ["Finalising assets", 95]].map(([task, threshold]) => (
                   <div key={task} style={styles.task}>
