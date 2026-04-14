@@ -79,15 +79,15 @@ export default function App() {
     const parts = [];
     for (let i = 0; i < totalChunks; i++) {
       const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-      const arrayBuffer = await chunk.arrayBuffer();
-      const uint8 = new Uint8Array(arrayBuffer);
-      let binary = '';
-      for (let j = 0; j < uint8.length; j++) binary += String.fromCharCode(uint8[j]);
-      const base64 = btoa(binary);
       const partRes = await fetch(`${WORKER_URL}/part`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, uploadId, partNumber: i + 1, chunk: base64 }),
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "X-Upload-Id": uploadId,
+          "X-Key": key,
+          "X-Part-Number": String(i + 1),
+        },
+        body: chunk,
       });
       const { etag } = await partRes.json();
       parts.push({ partNumber: i + 1, etag });
