@@ -62,6 +62,7 @@ export default function App() {
         const data = await fetchLatestContent(sessionId);
         if (data && (data.video_clips || data.linkedin)) {
           setResults(data);
+          if (data.video_clips) setHasClips(true);
           setLoadingResults(false);
           clearInterval(interval);
         } else if (attempts >= maxAttempts) {
