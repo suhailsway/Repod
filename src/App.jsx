@@ -44,9 +44,11 @@ export default function App() {
     }
     const savedSession = localStorage.getItem('repod_session_id');
     if (savedSession) {
+      const savedHasClips = localStorage.getItem('repod_has_clips') === 'true';
       setSessionId(savedSession);
-      setStep('results');
+      setHasClips(savedHasClips);
       setLoadingResults(true);
+      setStep('results');
     }
   }, []);
 
@@ -121,6 +123,7 @@ export default function App() {
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
     localStorage.setItem('repod_session_id', newSessionId);
+    localStorage.setItem('repod_has_clips', String(inputMode === 'video'));
     if (videoFile && inputMode === "video") {
       setIsUploading(true);
       setUploadProgress(0);
@@ -354,7 +357,7 @@ export default function App() {
                 <h2 style={styles.resultsTitle}>Your content is ready</h2>
                 <p style={styles.resultsSub}>{hasClips ? "6 assets generated" : "4 assets generated"}</p>
               </div>
-              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); localStorage.removeItem('repod_session_id'); }}>
+              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); localStorage.removeItem('repod_session_id'); localStorage.removeItem('repod_has_clips'); }}>
                 + New episode
               </button>
             </div>
