@@ -25,3 +25,5 @@ dist-ssr
 theta.py
 upload_server.py
 Terminal Saved Output.txt
+.env
+repod/
