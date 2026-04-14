@@ -60,7 +60,7 @@ export default function App() {
       const interval = setInterval(async () => {
         attempts++;
         const data = await fetchLatestContent(sessionId);
-        if (data && (data.video_clips || data.linkedin)) {
+        if (data && data.linkedin) {
           setResults(data);
           if (data.video_clips) setHasClips(true);
           setLoadingResults(false);
@@ -335,6 +335,14 @@ export default function App() {
               </div>
               <h2 style={styles.processingTitle}>{isUploading ? "Uploading your episode" : "Processing your episode"}</h2>
               <p style={styles.processingFile}>{audioUrl || videoFile?.name}</p>
+              {videoFile && !isUploading && (
+                <p style={{fontSize:11, color:"#555", marginBottom:8}}>
+                  {videoFile.size < 500*1024*1024 ? "Est. ~15 min processing" :
+                   videoFile.size < 1000*1024*1024 ? "Est. ~25 min processing" :
+                   videoFile.size < 1500*1024*1024 ? "Est. ~40 min processing" :
+                   "Est. ~60 min processing"}
+                </p>
+              )}
               <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${isUploading ? uploadProgress : progress}%`, transition: isUploading ? "width 0.2s ease" : "width 0.3s ease" }} /></div>
               <p style={styles.progressPct}>{isUploading ? `Uploading... ${uploadProgress}%` : `${Math.round(progress)}%`}</p>
               <div style={styles.taskList}>
