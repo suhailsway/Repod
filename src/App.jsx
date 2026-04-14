@@ -115,7 +115,9 @@ export default function App() {
 
     try {
       if (videoFile && inputMode === "video") {
-        videoPath = await uploadWithUppy(videoFile);
+        videoPath = await uploadWithUppy(videoFile, (pct) => {
+          setProgress(Math.min(pct * 0.5, 49));
+        });
       }
       await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
