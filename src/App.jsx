@@ -131,7 +131,7 @@ export default function App() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ audio_url: audioUrl, video_path: videoPath || null, mode: inputMode, session_id: newSessionId }),
       });
-    } catch (err) { console.log("Triggered"); }
+    } catch (err) { console.error("Upload error:", err); }
 
     let p = 0;
     const interval = setInterval(() => {
