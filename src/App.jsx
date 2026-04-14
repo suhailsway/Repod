@@ -111,14 +111,16 @@ export default function App() {
     setError(null);
     setHasClips(inputMode === "video");
     let videoPath = null;
-    setStep("processing");
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
+    if (videoFile && inputMode === "video") {
+      setIsUploading(true);
+      setUploadProgress(0);
+    }
+    setStep("processing");
 
     try {
       if (videoFile && inputMode === "video") {
-        setIsUploading(true);
-        setUploadProgress(0);
         videoPath = await uploadWithUppy(videoFile, (pct) => {
           setUploadProgress(pct);
         });
