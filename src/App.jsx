@@ -314,7 +314,7 @@ export default function App() {
                 <div className="spinner" style={styles.spinner} />
                 <span style={styles.spinnerIcon}>◈</span>
               </div>
-              <h2 style={styles.processingTitle}>Processing your episode</h2>
+              <h2 style={styles.processingTitle}>{progress < 50 && videoFile ? "Uploading your episode" : "Processing your episode"}</h2>
               <p style={styles.processingFile}>{audioUrl || videoFile?.name}</p>
               <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${progress}%` }} /></div>
               <p style={styles.progressPct}>{Math.round(progress)}%</p>
