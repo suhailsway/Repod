@@ -314,7 +314,7 @@ export default function App() {
                     if (f) {
                       const v = document.createElement("video");
                       v.preload = "metadata";
-                      v.onloadedmetadata = () => { const mins = Math.round(v.duration / 60); console.log("Video duration:", mins, "min"); setVideoDuration(mins); URL.revokeObjectURL(v.src); };
+                      v.onloadedmetadata = () => { setVideoDuration(Math.round(v.duration / 60)); URL.revokeObjectURL(v.src); };
                       v.src = URL.createObjectURL(f);
                     }
                   }} />
