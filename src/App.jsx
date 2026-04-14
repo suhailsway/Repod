@@ -374,7 +374,7 @@ export default function App() {
             {loadingResults ? (
               <div style={styles.loadingWrap}>
                 <div className="spinner" style={{ ...styles.spinner, position: "relative", margin: "0 auto" }} />
-                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>AI is generating your content... this takes about 3 minutes</p>
+                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>AI is generating your content... this may take 15-60 minutes depending on video length</p>
               </div>
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
