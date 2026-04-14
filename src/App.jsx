@@ -379,7 +379,7 @@ export default function App() {
                 <h2 style={styles.resultsTitle}>Your content is ready</h2>
                 <p style={styles.resultsSub}>{hasClips ? "6 assets generated" : "4 assets generated"}</p>
               </div>
-              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); localStorage.removeItem('repod_session_id'); localStorage.removeItem('repod_has_clips'); }}>
+              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); localStorage.removeItem('repod_session_id'); localStorage.removeItem('repod_has_clips'); localStorage.removeItem('repod_video_duration'); }}>
                 + New episode
               </button>
             </div>
