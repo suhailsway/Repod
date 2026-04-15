@@ -39,19 +39,21 @@ export default async function handler(req, res) {
       const aaiData = await aaiRes.json();
       const transcriptId = aaiData.id;
 
-      await insertJob({ session_id: sessionId, transcript_id: transcriptId, user_email: user_email || '' });
+      await insertJob({
+        session_id: sessionId,
+        transcript_id: transcriptId,
+        user_email: user_email || '',
+        status: 'pending',
+      });
     }
 
     if (mode === 'video') {
-      const supoclipRes = await fetch('http://159.223.166.171:8000/tasks/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'user_id': 'repod-user-001' },
-        body: JSON.stringify({ source: { url: sourceUrl, type: "youtube" }, font_options: { font_size: 72 } }),
+      await insertJob({
+        session_id: sessionId,
+        video_path: sourceUrl,
+        user_email: user_email || '',
+        status: 'pending',
       });
-      const supoclipData = await supoclipRes.json();
-      const taskId = supoclipData.task_id;
-
-      await insertJob({ session_id: sessionId, task_id: taskId, user_email: user_email || '' });
     }
 
     return res.status(200).json({ success: true, sessionId });
