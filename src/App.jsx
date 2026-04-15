@@ -193,6 +193,8 @@ export default function App() {
     { key: "newsletter", label: "Newsletter", icon: "✉️" },
     { key: "shownotes", label: "Show Notes", icon: "📋" },
     { key: "facebook", label: "Facebook", icon: "👥" },
+    { key: "instagram", label: "Instagram", icon: "📸" },
+    { key: "hashtags", label: "Hashtags", icon: "#" },
   ];
 
   const clipUrls = results?.video_clips ? (() => {
