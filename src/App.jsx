@@ -155,7 +155,7 @@ export default function App() {
       }
       await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audio_url: finalAudioUrl || audioUrl, video_path: videoPath || null, mode: inputMode, session_id: newSessionId }),
+        body: JSON.stringify({ audio_url: finalAudioUrl || audioUrl, video_path: videoPath || null, mode: inputMode, session_id: newSessionId, user_email: user?.primaryEmailAddress?.emailAddress || "" }),
       });
     } catch (err) { console.error("Upload error:", err); }
 
