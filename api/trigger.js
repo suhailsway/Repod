@@ -1,8 +1,25 @@
+const SUPABASE_URL = 'https://frbziezfrpdbtrkbmlzy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyYnppZXpmcnBkYnRya2JtbHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMDM5MDUsImV4cCI6MjA5MTc3OTkwNX0.S7ViyQgVYgxdxk2EU8470DChaD46WO20X9mdDDkQ1Hk';
+
+async function insertJob(fields) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/repod_jobs`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    },
+    body: JSON.stringify(fields),
+  });
+  return res.json();
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
@@ -22,20 +39,7 @@ export default async function handler(req, res) {
       const aaiData = await aaiRes.json();
       const transcriptId = aaiData.id;
 
-      await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fields: {
-            session_id: sessionId,
-            transcript_id: transcriptId,
-            ...(user_email && { user_email }),
-          }
-        }),
-      });
+      await insertJob({ session_id: sessionId, transcript_id: transcriptId, user_email: user_email || '' });
     }
 
     if (mode === 'video') {
@@ -47,20 +51,7 @@ export default async function handler(req, res) {
       const supoclipData = await supoclipRes.json();
       const taskId = supoclipData.task_id;
 
-      await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblaDHnsqtL3PWZk1', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fields: {
-            session_id: sessionId,
-            task_id: taskId,
-            ...(user_email && { user_email }),
-          }
-        }),
-      });
+      await insertJob({ session_id: sessionId, task_id: taskId, user_email: user_email || '' });
     }
 
     return res.status(200).json({ success: true, sessionId });
