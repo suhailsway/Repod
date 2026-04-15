@@ -3,16 +3,14 @@ import { useUser, SignInButton, SignOutButton, SignUpButton, SignedIn, SignedOut
 import Uppy from "@uppy/core";
 import AwsS3 from "@uppy/aws-s3";
 
-const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN;
-const AIRTABLE_BASE = "appHPv16UPdsghkQt";
-const AIRTABLE_TABLE = "tblaDHnsqtL3PWZk1";
+const SUPABASE_URL = "https://frbziezfrpdbtrkbmlzy.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyYnppZXpmcnBkYnRya2JtbHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMDM5MDUsImV4cCI6MjA5MTc3OTkwNX0.S7ViyQgVYgxdxk2EU8470DChaD46WO20X9mdDDkQ1Hk";
 
 async function fetchLatestContent(sessionId) {
-  const formula = `AND({session_id}="${sessionId}",OR({video_clips}!="",{linkedin}!=""))`;
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+  const url = `${SUPABASE_URL}/rest/v1/repod_jobs?session_id=eq.${sessionId}&or=(video_clips.not.is.null,linkedin.not.is.null)&limit=1&select=*`;
+  const res = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   const data = await res.json();
-  if (data.records && data.records.length > 0) return data.records[0].fields;
+  if (data && data.length > 0) return data[0];
   return null;
 }
 
@@ -175,10 +173,10 @@ export default function App() {
 
   const handleFeedback = async () => {
     if (!feedbackMessage.trim()) return;
-    await fetch('https://api.airtable.com/v0/appHPv16UPdsghkQt/tblFeedback', {
+    await fetch(`${SUPABASE_URL}/rest/v1/repod_feedback`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { email: feedbackEmail, message: feedbackMessage } }),
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: feedbackEmail, message: feedbackMessage }),
     }).catch(() => {});
     setFeedbackSent(true);
   };
