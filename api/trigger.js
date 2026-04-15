@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { audio_url, video_path, mode = 'audio', session_id } = req.body;
+    const { audio_url, video_path, mode = 'audio', session_id, user_email } = req.body;
     const sessionId = session_id || Date.now().toString();
     const sourceUrl = video_path || audio_url;
 
@@ -32,6 +32,7 @@ export default async function handler(req, res) {
           fields: {
             session_id: sessionId,
             transcript_id: transcriptId,
+            ...(user_email && { user_email }),
           }
         }),
       });
@@ -52,7 +53,13 @@ export default async function handler(req, res) {
           'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ fields: { session_id: sessionId, task_id: taskId } }),
+        body: JSON.stringify({
+          fields: {
+            session_id: sessionId,
+            task_id: taskId,
+            ...(user_email && { user_email }),
+          }
+        }),
       });
     }
 
