@@ -487,7 +487,7 @@ export default function App() {
                 <div style={{textAlign:"center", padding:"16px 0"}}>
                   <label style={{cursor:"pointer",padding:"12px 24px",border:"1px dashed #555",borderRadius:"8px",color:"#aaa",fontSize:"13px",display:"inline-block"}}>
                     {videoFile ? `✓ ${videoFile.name}` : "Click to upload MP4 file"}
-                    <input type="file" accept="video/mp4" style={{display:"none"}} onChange={e => {
+                    <input type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/avi" style={{display:"none"}} onChange={e => {
                     const f = e.target.files[0] || null;
                     setVideoFile(f);
                     if (f) {
