@@ -14,16 +14,18 @@ async function fetchLatestContent(sessionId) {
   return null;
 }
 
+const sansFont = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+
 function SocialCard({ platform, content, onCopy, copied }) {
   if (!content) return (
-    <div style={{ padding: "32px", textAlign: "center", color: "#555", fontSize: 13 }}>
+    <div style={{ padding: "32px", textAlign: "center", color: "#555", fontSize: 13, fontFamily: sansFont }}>
       No content yet — still generating...
     </div>
   );
 
-  const avatarStyle = { width: 40, height: 40, borderRadius: "50%", background: "#E8FF47", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 };
+  const avatarStyle = { width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flexShrink: 0, letterSpacing: -0.5 };
   const copyBtn = (
-    <button onClick={onCopy} style={{ marginTop: 12, background: copied ? "#E8FF47" : "transparent", border: "1px solid #2a2a2a", color: copied ? "#0a0a0a" : "#888", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12, width: "100%" }}>
+    <button onClick={onCopy} style={{ marginTop: 16, background: copied ? "#E8FF47" : "transparent", border: `1px solid ${copied ? "#E8FF47" : "#333"}`, color: copied ? "#0a0a0a" : "#666", padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: 12, width: "100%", fontFamily: sansFont, transition: "all 0.15s" }}>
       {copied ? "✓ Copied!" : "Copy to clipboard"}
     </button>
   );
@@ -35,16 +37,16 @@ function SocialCard({ platform, content, onCopy, copied }) {
         {tweets.map((tweet, i) => (
           <div key={i} style={{ padding: "16px", borderBottom: i < tweets.length - 1 ? "1px solid #2f3336" : "none" }}>
             <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ ...avatarStyle, background: "#1DA1F2", fontSize: 14, color: "#fff" }}>🐦</div>
+              <div style={{ ...avatarStyle, background: "#1DA1F2", color: "#fff" }}>X</div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
                   <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Your Podcast</span>
                   <span style={{ color: "#71767b", fontSize: 14 }}>@podcast</span>
                   {i > 0 && <span style={{ color: "#71767b", fontSize: 14 }}>· {i + 1}/{tweets.length}</span>}
                 </div>
-                <p style={{ color: "#e7e9ea", fontSize: 14, lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap" }}>{tweet}</p>
-                <div style={{ display: "flex", gap: 24, marginTop: 12, color: "#71767b", fontSize: 12 }}>
-                  <span>💬 Reply</span><span>🔁 Repost</span><span>❤️ Like</span><span>📤 Share</span>
+                <p style={{ color: "#e7e9ea", fontSize: 15, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap", fontFamily: sansFont }}>{tweet}</p>
+                <div style={{ display: "flex", gap: 24, marginTop: 12, color: "#71767b", fontSize: 12, fontFamily: sansFont }}>
+                  <span>↩ Reply</span><span>↺ Repost</span><span>♡ Like</span><span>↗ Share</span>
                 </div>
               </div>
             </div>
@@ -59,16 +61,16 @@ function SocialCard({ platform, content, onCopy, copied }) {
     return (
       <div style={{ background: "#1b1f23", border: "1px solid #2a2a2a", borderRadius: 12, padding: 16 }}>
         <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-          <div style={{ ...avatarStyle, background: "#0077b5", color: "#fff", fontSize: 14 }}>in</div>
+          <div style={{ ...avatarStyle, background: "#0077b5", color: "#fff" }}>in</div>
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Your Podcast</div>
-            <div style={{ color: "#888", fontSize: 12 }}>Podcast Creator · 1st</div>
-            <div style={{ color: "#888", fontSize: 11 }}>Just now · 🌐</div>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: sansFont }}>Your Podcast</div>
+            <div style={{ color: "#888", fontSize: 12, fontFamily: sansFont }}>Podcast Creator · 1st</div>
+            <div style={{ color: "#888", fontSize: 11, fontFamily: sansFont }}>Just now · 🌐</div>
           </div>
         </div>
-        <p style={{ color: "#e0e0e0", fontSize: 14, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{content}</p>
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #2a2a2a", display: "flex", gap: 16, color: "#888", fontSize: 12 }}>
-          <span>👍 Like</span><span>💬 Comment</span><span>🔁 Repost</span><span>📤 Send</span>
+        <p style={{ color: "#e0e0e0", fontSize: 15, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap", fontFamily: sansFont }}>{content}</p>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #2a2a2a", display: "flex", gap: 16, color: "#888", fontSize: 12, fontFamily: sansFont }}>
+          <span>👍 Like</span><span>💬 Comment</span><span>↺ Repost</span><span>↗ Send</span>
         </div>
         {copyBtn}
       </div>
@@ -85,9 +87,9 @@ function SocialCard({ platform, content, onCopy, copied }) {
             <div style={{ color: "#b0b3b8", fontSize: 12 }}>Just now · 🌐</div>
           </div>
         </div>
-        <p style={{ color: "#e4e6eb", fontSize: 14, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{content}</p>
+        <p style={{ color: "#e4e6eb", fontSize: 15, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap", fontFamily: sansFont }}>{content}</p>
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #3a3b3c", display: "flex", gap: 16, color: "#b0b3b8", fontSize: 12 }}>
-          <span>👍 Like</span><span>💬 Comment</span><span>↗️ Share</span>
+          <span style={{fontFamily: sansFont}}>👍 Like</span><span style={{fontFamily: sansFont}}>💬 Comment</span><span style={{fontFamily: sansFont}}>↗ Share</span>
         </div>
         {copyBtn}
       </div>
@@ -134,7 +136,7 @@ function SocialCard({ platform, content, onCopy, copied }) {
   const accentColors = { newsletter: "#9b59b6", shownotes: "#27ae60" };
   return (
     <div style={{ background: bgColors[platform] || "#111", border: `1px solid ${accentColors[platform] || "#2a2a2a"}`, borderRadius: 12, padding: 16 }}>
-      <p style={{ color: "#e0e0e0", fontSize: 14, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>{content}</p>
+      <p style={{ color: "#e0e0e0", fontSize: 15, lineHeight: 1.8, margin: 0, whiteSpace: "pre-wrap", fontFamily: sansFont }}>{content}</p>
       {copyBtn}
     </div>
   );
