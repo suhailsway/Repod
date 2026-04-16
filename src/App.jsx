@@ -555,9 +555,23 @@ export default function App() {
               <p style={{fontSize: 40, marginBottom: 16}}>⚠️</p>
               <h2 style={{...styles.processingTitle, color: "#ff6b6b"}}>Processing failed</h2>
               <p style={{color: "#888", fontSize: 13, marginBottom: 24, textAlign: "center"}}>{error}</p>
-              <button style={styles.newBtn} onClick={() => { setStep("upload"); setError(null); setSessionId(null); localStorage.removeItem("repod_session_id"); localStorage.removeItem("repod_has_clips"); }}>
-                Try again
-              </button>
+              <div style={{display: "flex", gap: 12, justifyContent: "center"}}>
+                <button style={styles.newBtn} onClick={async () => {
+                  if (sessionId) {
+                    try {
+                      await fetch("/api/retry", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({session_id: sessionId}) });
+                      setError(null);
+                      setLoadingResults(true);
+                      setStep("results");
+                    } catch(e) { console.error(e); }
+                  }
+                }}>
+                  🔄 Retry
+                </button>
+                <button style={{...styles.newBtn, background: "transparent", border: "1px solid #333", color: "#888"}} onClick={() => { setStep("upload"); setError(null); setSessionId(null); localStorage.removeItem("repod_session_id"); localStorage.removeItem("repod_has_clips"); }}>
+                  Start over
+                </button>
+              </div>
             </div>
           </div>
         )}
