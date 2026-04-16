@@ -362,7 +362,7 @@ export default function App() {
             </div>
 
             <div style={styles.stats}>
-              {[["5 min", "avg processing"], ["6 assets", "per episode"], ["$29/mo", "pro plan"]].map(([val, label]) => (
+              {[["~2 min", "first results"], ["6 assets", "per episode"], ["$29/mo", "pro plan"]].map(([val, label]) => (
                 <div key={label} style={styles.stat}>
                   <span style={styles.statVal}>{val}</span>
                   <span style={styles.statLabel}>{label}</span>
@@ -384,8 +384,8 @@ export default function App() {
               {!isUploading && (videoFile && videoDuration > 0 || audioFile) && (
                 <p style={{fontSize:11, color:"#555", marginBottom:8}}>
                   {audioFile
-                    ? `Est. ~${Math.max(5, Math.round(audioFile.size / (1024*1024*10)))} min processing`
-                    : `Est. ~${Math.max(10, Math.round(videoDuration * 0.25))} min processing`}
+                    ? `First results in ~2 min · Full processing: ~${Math.max(5, Math.round(audioFile.size / (1024*1024*10)))} min`
+                    : `First results in ~2 min · Full processing: ~${Math.max(10, Math.round(videoDuration * 0.25))} min`}
                 </p>
               )}
               <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${isUploading ? uploadProgress : progress}%`, transition: isUploading ? "width 0.2s ease" : "width 0.3s ease" }} /></div>
@@ -432,7 +432,7 @@ export default function App() {
             {loadingResults ? (
               <div style={styles.loadingWrap}>
                 <div className="spinner" style={{ ...styles.spinner, position: "relative", margin: "0 auto" }} />
-                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>{videoDuration > 0 ? `AI is generating your content... est. ~${Math.max(10, Math.round(videoDuration * 0.25))} min` : "AI is generating your content..."}</p>
+                <p style={{ color: "#555", marginTop: 24, fontSize: 13, textAlign: "center" }}>{videoDuration > 0 ? `AI is processing your content · First results appear in ~2 min · Full processing: ~${Math.max(10, Math.round(videoDuration * 0.25))} min` : "AI is processing your content · First results appear in ~2 min..."}</p>
               </div>
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
