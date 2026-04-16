@@ -29,8 +29,7 @@ function SocialCard({ platform, content, onCopy, copied }) {
   );
 
   if (platform === "twitter") {
-    const tweets = content.split("
-").filter(t => t.trim());
+    const tweets = content.split("\n").filter(t => t.trim());
     return (
       <div style={{ background: "#000", border: "1px solid #2f3336", borderRadius: 12, overflow: "hidden" }}>
         {tweets.map((tweet, i) => (
