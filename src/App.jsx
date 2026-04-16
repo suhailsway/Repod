@@ -14,6 +14,133 @@ async function fetchLatestContent(sessionId) {
   return null;
 }
 
+function SocialCard({ platform, content, onCopy, copied }) {
+  if (!content) return (
+    <div style={{ padding: "32px", textAlign: "center", color: "#555", fontSize: 13 }}>
+      No content yet — still generating...
+    </div>
+  );
+
+  const avatarStyle = { width: 40, height: 40, borderRadius: "50%", background: "#E8FF47", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 };
+  const copyBtn = (
+    <button onClick={onCopy} style={{ marginTop: 12, background: copied ? "#E8FF47" : "transparent", border: "1px solid #2a2a2a", color: copied ? "#0a0a0a" : "#888", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12, width: "100%" }}>
+      {copied ? "✓ Copied!" : "Copy to clipboard"}
+    </button>
+  );
+
+  if (platform === "twitter") {
+    const tweets = content.split("
+").filter(t => t.trim());
+    return (
+      <div style={{ background: "#000", border: "1px solid #2f3336", borderRadius: 12, overflow: "hidden" }}>
+        {tweets.map((tweet, i) => (
+          <div key={i} style={{ padding: "16px", borderBottom: i < tweets.length - 1 ? "1px solid #2f3336" : "none" }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ ...avatarStyle, background: "#1DA1F2", fontSize: 14, color: "#fff" }}>🐦</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+                  <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Your Podcast</span>
+                  <span style={{ color: "#71767b", fontSize: 14 }}>@podcast</span>
+                  {i > 0 && <span style={{ color: "#71767b", fontSize: 14 }}>· {i + 1}/{tweets.length}</span>}
+                </div>
+                <p style={{ color: "#e7e9ea", fontSize: 14, lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap" }}>{tweet}</p>
+                <div style={{ display: "flex", gap: 24, marginTop: 12, color: "#71767b", fontSize: 12 }}>
+                  <span>💬 Reply</span><span>🔁 Repost</span><span>❤️ Like</span><span>📤 Share</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+        <div style={{ padding: "12px 16px", borderTop: "1px solid #2f3336" }}>{copyBtn}</div>
+      </div>
+    );
+  }
+
+  if (platform === "linkedin") {
+    return (
+      <div style={{ background: "#1b1f23", border: "1px solid #2a2a2a", borderRadius: 12, padding: 16 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <div style={{ ...avatarStyle, background: "#0077b5", color: "#fff", fontSize: 14 }}>in</div>
+          <div>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Your Podcast</div>
+            <div style={{ color: "#888", fontSize: 12 }}>Podcast Creator · 1st</div>
+            <div style={{ color: "#888", fontSize: 11 }}>Just now · 🌐</div>
+          </div>
+        </div>
+        <p style={{ color: "#e0e0e0", fontSize: 14, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{content}</p>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #2a2a2a", display: "flex", gap: 16, color: "#888", fontSize: 12 }}>
+          <span>👍 Like</span><span>💬 Comment</span><span>🔁 Repost</span><span>📤 Send</span>
+        </div>
+        {copyBtn}
+      </div>
+    );
+  }
+
+  if (platform === "facebook") {
+    return (
+      <div style={{ background: "#1c1e21", border: "1px solid #3a3b3c", borderRadius: 12, padding: 16 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <div style={{ ...avatarStyle, background: "#1877f2", color: "#fff", fontSize: 14 }}>f</div>
+          <div>
+            <div style={{ color: "#e4e6eb", fontWeight: 700, fontSize: 14 }}>Your Podcast</div>
+            <div style={{ color: "#b0b3b8", fontSize: 12 }}>Just now · 🌐</div>
+          </div>
+        </div>
+        <p style={{ color: "#e4e6eb", fontSize: 14, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{content}</p>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #3a3b3c", display: "flex", gap: 16, color: "#b0b3b8", fontSize: 12 }}>
+          <span>👍 Like</span><span>💬 Comment</span><span>↗️ Share</span>
+        </div>
+        {copyBtn}
+      </div>
+    );
+  }
+
+  if (platform === "instagram") {
+    return (
+      <div style={{ background: "#000", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #2a2a2a" }}>
+          <div style={{ ...avatarStyle, background: "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)", color: "#fff", fontSize: 14 }}>📸</div>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>yourpodcast</span>
+        </div>
+        <div style={{ background: "#111", height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "#555", fontSize: 13 }}>🎙️ Podcast Cover</div>
+        <div style={{ padding: 16 }}>
+          <div style={{ display: "flex", gap: 16, marginBottom: 12, color: "#fff", fontSize: 18 }}>
+            <span>❤️</span><span>💬</span><span>📤</span>
+          </div>
+          <p style={{ color: "#e0e0e0", fontSize: 14, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>
+            <span style={{ fontWeight: 700 }}>yourpodcast </span>{content}
+          </p>
+        </div>
+        <div style={{ padding: "0 16px 16px" }}>{copyBtn}</div>
+      </div>
+    );
+  }
+
+  if (platform === "hashtags") {
+    const tags = content.split(" ").filter(t => t.startsWith("#"));
+    return (
+      <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 12, padding: 16 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          {tags.map((tag, i) => (
+            <span key={i} style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#E8FF47", padding: "4px 10px", borderRadius: 20, fontSize: 12 }}>{tag}</span>
+          ))}
+        </div>
+        {copyBtn}
+      </div>
+    );
+  }
+
+  // Default: newsletter, shownotes
+  const bgColors = { newsletter: "#1a0a2e", shownotes: "#0a1a0a" };
+  const accentColors = { newsletter: "#9b59b6", shownotes: "#27ae60" };
+  return (
+    <div style={{ background: bgColors[platform] || "#111", border: `1px solid ${accentColors[platform] || "#2a2a2a"}`, borderRadius: 12, padding: 16 }}>
+      <p style={{ color: "#e0e0e0", fontSize: 14, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>{content}</p>
+      {copyBtn}
+    </div>
+  );
+}
+
 export default function App() {
   const { isSignedIn, user } = useUser();
   const [step, setStep] = useState("upload");
@@ -67,9 +194,17 @@ export default function App() {
           const status = data.status;
           if (data.linkedin) {
             setResults(data);
-            if (data.video_clips) setHasClips(true);
-            setLoadingResults(false);
-            clearInterval(interval);
+            if (data.video_clips) {
+              setHasClips(true);
+              setLoadingResults(false);
+              clearInterval(interval);
+            } else if (status === "completed") {
+              setLoadingResults(false);
+              clearInterval(interval);
+            } else {
+              // Content ready but clips still processing — show content, keep polling for clips
+              setLoadingResults(false);
+            }
           } else if (status === "error") {
             setLoadingResults(false);
             setError("Something went wrong processing your file. Please try again.");
@@ -448,12 +583,7 @@ export default function App() {
                       </button>
                     ))}
                   </div>
-                  <div style={styles.contentBox}>
-                    <pre style={styles.contentText}>{results ? (results[activeTab] || "No content found.") : "No data available."}</pre>
-                  </div>
-                  <button style={{ ...styles.copyBtn, ...(copied === activeTab ? styles.copyBtnDone : {}) }} onClick={() => copy(activeTab)}>
-                    {copied === activeTab ? "✓ Copied!" : "Copy to clipboard"}
-                  </button>
+                  <SocialCard platform={activeTab} content={results ? (results[activeTab] || "") : ""} onCopy={() => copy(activeTab)} copied={copied === activeTab} />
                 </div>
 
                 {hasClips && clipUrls.length > 0 && (
