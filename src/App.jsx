@@ -7,7 +7,7 @@ const SUPABASE_URL = "https://frbziezfrpdbtrkbmlzy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyYnppZXpmcnBkYnRya2JtbHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMDM5MDUsImV4cCI6MjA5MTc3OTkwNX0.S7ViyQgVYgxdxk2EU8470DChaD46WO20X9mdDDkQ1Hk";
 
 async function fetchLatestContent(sessionId) {
-  const url = `${SUPABASE_URL}/rest/v1/repod_jobs?session_id=eq.${sessionId}&or=(video_clips.not.is.null,linkedin.not.is.null)&limit=1&select=*`;
+  const url = `${SUPABASE_URL}/rest/v1/repod_jobs?session_id=eq.${sessionId}&limit=1&select=*&order=created_at.desc`;
   const res = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   const data = await res.json();
   if (data && data.length > 0) return data[0];
@@ -57,21 +57,35 @@ export default function App() {
   useEffect(() => {
     if (step === "results" && sessionId) {
       setLoadingResults(true);
+      setError(null);
       let attempts = 0;
-      const maxAttempts = 40;
+      const maxAttempts = 60;
       const interval = setInterval(async () => {
         attempts++;
         const data = await fetchLatestContent(sessionId);
-        if (data && data.linkedin) {
-          setResults(data);
-          if (data.video_clips) setHasClips(true);
-          setLoadingResults(false);
-          clearInterval(interval);
+        if (data) {
+          const status = data.status;
+          if (data.linkedin) {
+            setResults(data);
+            if (data.video_clips) setHasClips(true);
+            setLoadingResults(false);
+            clearInterval(interval);
+          } else if (status === "error") {
+            setLoadingResults(false);
+            setError("Something went wrong processing your file. Please try again.");
+            clearInterval(interval);
+            localStorage.removeItem("repod_session_id");
+          } else if (attempts >= maxAttempts) {
+            setLoadingResults(false);
+            setError("Processing is taking longer than expected. Check your email — we will notify you when your content is ready.");
+            clearInterval(interval);
+          }
         } else if (attempts >= maxAttempts) {
           setLoadingResults(false);
+          setError("Could not find your job. Please try again.");
           clearInterval(interval);
         }
-      }, 30000);
+      }, 15000);
       return () => clearInterval(interval);
     }
   }, [step, sessionId]);
@@ -389,13 +403,26 @@ export default function App() {
           </div>
         )}
 
-        {step === "results" && (
+        {step === "results" && error && (
+          <div style={styles.processingWrap}>
+            <div style={styles.processingCard}>
+              <p style={{fontSize: 40, marginBottom: 16}}>⚠️</p>
+              <h2 style={{...styles.processingTitle, color: "#ff6b6b"}}>Processing failed</h2>
+              <p style={{color: "#888", fontSize: 13, marginBottom: 24, textAlign: "center"}}>{error}</p>
+              <button style={styles.newBtn} onClick={() => { setStep("upload"); setError(null); setSessionId(null); localStorage.removeItem("repod_session_id"); localStorage.removeItem("repod_has_clips"); }}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "results" && !error && (
           <div style={styles.resultsWrap}>
             <div style={styles.resultsHeader}>
               <div>
                 <div style={styles.badge}><span style={styles.badgeDot} />{loadingResults ? "Processing..." : "Ready"}</div>
-                <h2 style={styles.resultsTitle}>Your content is ready</h2>
-                <p style={styles.resultsSub}>{hasClips ? "6 assets generated" : "4 assets generated"}</p>
+                <h2 style={styles.resultsTitle}>{loadingResults ? "Generating your content..." : "Your content is ready"}</h2>
+                <p style={styles.resultsSub}>{loadingResults ? "This may take several minutes for large files" : hasClips ? "6 assets generated" : "4 assets generated"}</p>
               </div>
               <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); localStorage.removeItem('repod_session_id'); localStorage.removeItem('repod_has_clips'); localStorage.removeItem('repod_video_duration'); }}>
                 + New episode
