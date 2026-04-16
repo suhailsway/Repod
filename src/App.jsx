@@ -24,7 +24,7 @@ const PlatformLogo = ({ platform }) => {
   return logos[platform] || null;
 };
 
-const sansFont = "'Inter', 'Helvetica Neue', Arial, sans-serif";'Inter', 'Helvetica Neue', Arial, sans-serif";
+const sansFont = "'Inter', 'Helvetica Neue', Arial, sans-serif";
 
 function SocialCard({ platform, content, onCopy, copied }) {
   if (!content) return (
