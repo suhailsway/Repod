@@ -599,11 +599,23 @@ export default function App() {
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
                 {results && hasClips && results.status !== "completed" && (
-                  <div style={{ gridColumn: "1 / -1", background: "#0f1a0a", border: "1px solid #1a3a1a", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                    <div className="spinner" style={{ width: 16, height: 16, border: "2px solid #1a3a1a", borderTop: "2px solid #E8FF47", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
-                    <div>
-                      <span style={{ color: "#E8FF47", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif" }}>✂️ Video clips processing</span>
-                      <span style={{ color: "#888", fontSize: 12, marginLeft: 8, fontFamily: "Inter, sans-serif" }}>{results.clips_status || "Analyzing your video..."}</span>
+                  <div style={{ gridColumn: "1 / -1", background: "linear-gradient(135deg, #0a0f0a 0%, #0d1a0d 100%)", border: "1px solid #1f3a1f", borderRadius: 12, padding: "16px 20px", marginBottom: 12, overflow: "hidden", position: "relative" }}>
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(232,255,71,0.03) 50%, transparent 100%)", animation: "shimmer 2s infinite" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 3, height: 24 }}>
+                        {[1,2,3,4,5].map(i => (
+                          <div key={i} style={{ width: 3, background: "#E8FF47", borderRadius: 2, animation: `barPulse 1s ease-in-out ${i * 0.15}s infinite alternate`, height: `${8 + i * 3}px` }} />
+                        ))}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: "#E8FF47", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", letterSpacing: 0.3 }}>Rendering video clips</div>
+                        <div style={{ color: "#4a7a4a", fontSize: 12, marginTop: 2, fontFamily: "Inter, sans-serif" }}>{results.clips_status || "Analyzing your video..."}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {[0,1,2,3].map(i => (
+                          <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i === 0 ? "#E8FF47" : "#1f3a1f", animation: `dotPulse 1.2s ease-in-out ${i * 0.3}s infinite` }} />
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -622,7 +634,7 @@ export default function App() {
                   <SocialCard platform={activeTab} content={results ? (results[activeTab] || "") : ""} onCopy={() => copy(activeTab)} copied={copied === activeTab} />
                 </div>
 
-                {hasClips && clipUrls.length > 0 && (
+                {hasClips && clipUrls.length > 0 && results.status === "completed" && (
                   <div style={styles.panel}>
                     <div style={styles.panelHeader}>
                       <span style={styles.panelTitle}>Short-Form Clips</span>
@@ -750,4 +762,7 @@ const css = `
   body { background: #0a0a0a; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { animation: spin 1s linear infinite; }
+  @keyframes barPulse { from { transform: scaleY(0.4); opacity: 0.5; } to { transform: scaleY(1); opacity: 1; } }
+  @keyframes dotPulse { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 input::placeholder, textarea::placeholder { color: #666; }`;
