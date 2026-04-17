@@ -662,6 +662,26 @@ export default function App() {
             )}
           </div>
         )}
+      {showFeedbackModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => setShowFeedbackModal(false)}>
+          <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 16, padding: 32, width: "100%", maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 22, margin: 0 }}>Share your thoughts</h2>
+              <button onClick={() => setShowFeedbackModal(false)} style={{ background: "transparent", border: "none", color: "#888", fontSize: 20, cursor: "pointer" }}>×</button>
+            </div>
+            <p style={{ color: "#555", fontSize: 13, marginBottom: 20 }}>We are early. Your feedback shapes what we build next.</p>
+            {feedbackSent ? (
+              <p style={{ color: "#E8FF47", fontSize: 14 }}>Thanks for your feedback!</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input style={styles.feedbackInput} type="email" placeholder="Your email (optional)" value={feedbackEmail} onChange={e => setFeedbackEmail(e.target.value)} />
+                <textarea style={{ ...styles.feedbackTextarea, minHeight: 120 }} placeholder="What would make REPOD better for you?" value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} rows={4} />
+                <button style={{ ...styles.feedbackBtn, marginTop: 4 }} onClick={handleFeedback}>Send feedback</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       </main>
     </div>
   );
