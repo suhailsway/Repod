@@ -171,6 +171,7 @@ export default function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -383,6 +384,7 @@ export default function App() {
           </SignedOut>
           <SignedIn>
             <button style={styles.navBtn} onClick={handleSubscribe}>Subscribe — $29/mo</button>
+            <button style={styles.navBtn} onClick={() => setShowFeedbackModal(true)}>Feedback</button>
             <SignOutButton><button style={styles.navBtn}>Sign out</button></SignOutButton>
           </SignedIn>
         </nav>
