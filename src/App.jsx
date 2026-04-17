@@ -599,7 +599,19 @@ export default function App() {
               </div>
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
-                {results && hasClips && results.status !== "completed" && (
+                {results && hasClips && results.clips_status && results.clips_status.toLowerCase().includes("failed") && (
+                  <div style={{ gridColumn: "1 / -1", background: "#1a0a0a", border: "1px solid #3a1f1f", borderRadius: 12, padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <span style={{ color: "#ff6b6b", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>⚠️ Clip generation failed</span>
+                      <div style={{ color: "#888", fontSize: 12, marginTop: 2, fontFamily: "Inter, sans-serif" }}>Your text content is ready. Clips can be retried.</div>
+                    </div>
+                    <button onClick={() => window.location.reload()} style={{ background: "transparent", border: "1px solid #ff6b6b", color: "#ff6b6b", padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Inter, sans-serif" }}>
+                      Refresh
+                    </button>
+                  </div>
+                )}
+
+                {results && hasClips && results.status !== "completed" && !results.clips_status?.toLowerCase().includes("failed") && (
                   <div style={{ gridColumn: "1 / -1", background: "linear-gradient(135deg, #0a0f0a 0%, #0d1a0d 100%)", border: "1px solid #1f3a1f", borderRadius: 12, padding: "16px 20px", marginBottom: 12, overflow: "hidden", position: "relative" }}>
                     <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(232,255,71,0.03) 50%, transparent 100%)", animation: "shimmer 2s infinite" }} />
                     <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
