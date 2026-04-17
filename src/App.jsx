@@ -206,7 +206,7 @@ export default function App() {
           const status = data.status;
           if (data.linkedin) {
             setResults(data);
-            if (data.video_clips) {
+            if (data.video_clips && status === "completed") {
               setHasClips(true);
               setLoadingResults(false);
               clearInterval(interval);
@@ -216,6 +216,7 @@ export default function App() {
             } else {
               // Content ready but clips still processing — show content, keep polling for clips
               setLoadingResults(false);
+              if (data.video_clips) setHasClips(true);
             }
           } else if (status === "error") {
             setLoadingResults(false);
