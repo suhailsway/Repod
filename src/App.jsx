@@ -599,7 +599,13 @@ export default function App() {
               </div>
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
-                {results && hasClips && results.clips_status && results.clips_status.toLowerCase().includes("failed") && (
+                {results && hasClips && results.clips_status && results.clips_status.toLowerCase().includes("too long") && (
+                  <div style={{ gridColumn: "1 / -1", background: "#111", border: "1px solid #2a2a2a", borderRadius: 12, padding: "16px 20px", marginBottom: 12 }}>
+                    <span style={{ color: "#888", fontSize: 13, fontFamily: "Inter, sans-serif" }}>ℹ️ Video clips are not available for episodes over 4 hours. Your text content is ready above.</span>
+                  </div>
+                )}
+
+                {results && hasClips && results.clips_status && results.clips_status.toLowerCase().includes("failed") && !results.clips_status.toLowerCase().includes("too long") && (
                   <div style={{ gridColumn: "1 / -1", background: "#1a0a0a", border: "1px solid #3a1f1f", borderRadius: 12, padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div>
                       <span style={{ color: "#ff6b6b", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>⚠️ Clip generation failed</span>
