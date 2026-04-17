@@ -26,7 +26,13 @@ export default async function handler(req, res) {
     const platformPrompt = PLATFORM_PROMPTS[platform] || 'Write engaging content for this platform.';
     const instructionText = instructions ? `\n\nAdditional instructions: ${instructions}` : '';
 
-    const prompt = `Based on this podcast transcript, ${platformPrompt}${instructionText}\n\nReturn ONLY the raw content with no explanation or preamble.\n\nTRANSCRIPT: ${transcript.slice(0, 6000)}`;
+    const prompt = `You are a social media content creator. Based STRICTLY on the podcast transcript below, ${platformPrompt}${instructionText}
+
+IMPORTANT: Stay grounded in the actual content, topics, stories and quotes from the transcript. Do not invent new topics or drift from what was discussed. Apply the style instructions while keeping the substance faithful to the transcript.
+
+Return ONLY the raw content with no explanation or preamble.
+
+TRANSCRIPT: ${transcript.slice(0, 8000)}`;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
