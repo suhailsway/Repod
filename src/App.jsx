@@ -172,6 +172,9 @@ export default function App() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenInstructions, setRegenInstructions] = useState("");
+  const [showRegenBox, setShowRegenBox] = useState(false);
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -332,6 +335,25 @@ export default function App() {
       if (p >= 100) { p = 100; clearInterval(interval); setTimeout(() => setStep("results"), 400); }
       setProgress(Math.min(p, 100));
     }, 900);
+  };
+
+  const handleRegenerate = async () => {
+    if (!sessionId || !results?.transcript) return;
+    setRegenerating(true);
+    try {
+      const res = await fetch("/api/regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, platform: activeTab, instructions: regenInstructions, transcript: results.transcript }),
+      });
+      const data = await res.json();
+      if (data.content) {
+        setResults(prev => ({ ...prev, [activeTab]: data.content }));
+        setShowRegenBox(false);
+        setRegenInstructions("");
+      }
+    } catch (e) { console.error(e); }
+    setRegenerating(false);
   };
 
   const handleSubscribe = async () => {
@@ -658,6 +680,31 @@ export default function App() {
                     ))}
                   </div>
                   <SocialCard platform={activeTab} content={results ? (results[activeTab] || "") : ""} onCopy={() => copy(activeTab)} copied={copied === activeTab} />
+                  <div style={{ marginTop: 12 }}>
+                    {showRegenBox ? (
+                      <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 10, padding: 16 }}>
+                        <textarea
+                          placeholder="Any instructions? e.g. 'make it more casual' or 'focus on the AI section' (optional)"
+                          value={regenInstructions}
+                          onChange={e => setRegenInstructions(e.target.value)}
+                          style={{ width: "100%", background: "#0a0a0a", border: "1px solid #333", borderRadius: 8, padding: "10px 12px", color: "#f0f0f0", fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", outline: "none", marginBottom: 10 }}
+                          rows={2}
+                        />
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={handleRegenerate} disabled={regenerating} style={{ flex: 1, background: "#E8FF47", border: "none", borderRadius: 8, padding: "8px 16px", color: "#0a0a0a", fontWeight: 700, cursor: regenerating ? "not-allowed" : "pointer", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+                            {regenerating ? "Regenerating..." : "↺ Regenerate"}
+                          </button>
+                          <button onClick={() => { setShowRegenBox(false); setRegenInstructions(""); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, padding: "8px 16px", color: "#888", cursor: "pointer", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setShowRegenBox(true)} style={{ background: "transparent", border: "1px solid #2a2a2a", borderRadius: 8, padding: "7px 14px", color: "#666", cursor: "pointer", fontSize: 12, fontFamily: "Inter, sans-serif", width: "100%" }}>
+                        ↺ Regenerate this content
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {hasClips && clipUrls.length > 0 && results.status === "completed" && (
