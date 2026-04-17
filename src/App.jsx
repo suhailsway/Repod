@@ -313,10 +313,17 @@ export default function App() {
         setIsUploading(false);
         setAudioUrl(finalAudioUrl);
       }
-      await fetch("/api/trigger", {
+      const triggerRes = await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ audio_url: finalAudioUrl || audioUrl, video_path: videoPath || null, mode: inputMode, session_id: newSessionId, user_email: user?.primaryEmailAddress?.emailAddress || "" }),
       });
+      if (triggerRes.status === 403) {
+        const errData = await triggerRes.json();
+        setStep("upload");
+        setIsUploading(false);
+        setError(errData.message || "Free limit reached. Please subscribe to continue.");
+        return;
+      }
     } catch (err) { console.error("Upload error:", err); }
 
     let p = 0;

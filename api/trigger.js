@@ -15,6 +15,26 @@ async function insertJob(fields) {
   return res.json();
 }
 
+const FREE_TIER_LIMIT = 3;
+
+async function checkUserLimit(userEmail) {
+  const SUPABASE_URL = 'https://frbziezfrpdbtrkbmlzy.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyYnppZXpmcnBkYnRya2JtbHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMDM5MDUsImV4cCI6MjA5MTc3OTkwNX0.S7ViyQgVYgxdxk2EU8470DChaD46WO20X9mdDDkQ1Hk';
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+
+  // Check if subscribed
+  const subRes = await fetch(`${SUPABASE_URL}/rest/v1/repod_subscribers?user_email=eq.${encodeURIComponent(userEmail)}&select=status&limit=1`, { headers });
+  const subs = await subRes.json();
+  if (subs && subs.length > 0 && subs[0].status === 'active') return { allowed: true, isSubscribed: true };
+
+  // Count completed jobs
+  const jobsRes = await fetch(`${SUPABASE_URL}/rest/v1/repod_jobs?user_email=eq.${encodeURIComponent(userEmail)}&status=eq.completed&select=id`, { headers });
+  const jobs = await jobsRes.json();
+  const count = jobs ? jobs.length : 0;
+
+  return { allowed: count < FREE_TIER_LIMIT, isSubscribed: false, count, limit: FREE_TIER_LIMIT };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -26,6 +46,19 @@ export default async function handler(req, res) {
     const { audio_url, video_path, mode = 'audio', session_id, user_email } = req.body;
     const sessionId = session_id || Date.now().toString();
     const sourceUrl = video_path || audio_url;
+
+    // Check free tier limit
+    if (user_email) {
+      const limitCheck = await checkUserLimit(user_email);
+      if (!limitCheck.allowed) {
+        return res.status(403).json({
+          error: 'free_limit_reached',
+          message: `You have used all ${limitCheck.limit} free generations. Please subscribe to continue.`,
+          count: limitCheck.count,
+          limit: limitCheck.limit,
+        });
+      }
+    }
 
     if (mode === 'audio') {
       const aaiRes = await fetch('https://api.assemblyai.com/v2/transcript', {
