@@ -243,7 +243,7 @@ export default function App() {
 
   const WORKER_URL = "https://upload.repodlab.com";
 
-  const uploadWithUppy = async (file, onProgress) => {
+const uploadWithUppy = async (file, onProgress) => {
     const CHUNK_SIZE = 50 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
@@ -254,21 +254,34 @@ export default function App() {
     });
     const { uploadId, key } = await startRes.json();
 
+    const uploadPart = async (i, retries = 3) => {
+      const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const partRes = await fetch(`${WORKER_URL}/part`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/octet-stream",
+              "X-Upload-Id": uploadId,
+              "X-Key": key,
+              "X-Part-Number": String(i + 1),
+            },
+            body: chunk,
+          });
+          if (!partRes.ok) throw new Error(`HTTP ${partRes.status}`);
+          const { etag } = await partRes.json();
+          return { partNumber: i + 1, etag };
+        } catch (err) {
+          if (attempt === retries - 1) throw err;
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        }
+      }
+    };
+
     const parts = [];
     for (let i = 0; i < totalChunks; i++) {
-      const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-      const partRes = await fetch(`${WORKER_URL}/part`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "X-Upload-Id": uploadId,
-          "X-Key": key,
-          "X-Part-Number": String(i + 1),
-        },
-        body: chunk,
-      });
-      const { etag } = await partRes.json();
-      parts.push({ partNumber: i + 1, etag });
+      const part = await uploadPart(i);
+      parts.push(part);
       if (onProgress) onProgress(Math.round(((i + 1) / totalChunks) * 100));
     }
 
@@ -282,7 +295,7 @@ export default function App() {
     return completeData.url;
   };
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (inputMode === "audio" && !audioUrl.trim() && !audioFile) { setError("Please enter a podcast URL or upload an MP3 file"); return; }
     if (inputMode === "video" && !videoFile) { setError("Please upload a video file"); return; }
     setError(null);
