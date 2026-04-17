@@ -244,7 +244,7 @@ export default function App() {
   const WORKER_URL = "https://upload.repodlab.com";
 
   const uploadWithUppy = async (file, onProgress) => {
-    const CHUNK_SIZE = 5 * 1024 * 1024;
+    const CHUNK_SIZE = 50 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
     const startRes = await fetch(`${WORKER_URL}/start`, {
