@@ -598,7 +598,7 @@ export default function App() {
               </div>
             ) : (
               <div style={{ ...styles.resultsGrid, gridTemplateColumns: hasClips && clipUrls.length > 0 ? "1fr 1fr" : "1fr" }}>
-                {results && !results.video_clips && hasClips && (
+                {results && hasClips && results.status !== "completed" && (
                   <div style={{ gridColumn: "1 / -1", background: "#0f1a0a", border: "1px solid #1a3a1a", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                     <div className="spinner" style={{ width: 16, height: 16, border: "2px solid #1a3a1a", borderTop: "2px solid #E8FF47", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
                     <div>
