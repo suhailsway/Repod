@@ -536,8 +536,9 @@ const uploadWithUppy = async (file, onProgress) => {
                 </div>
               )}
               {inputMode === "youtube" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 12 }}>
                   <input style={styles.input} type="text" placeholder="Paste YouTube URL..." value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+                  <p style={{ color: "#555", fontSize: 12, margin: 0 }}>Paste any YouTube podcast or video URL — we'll download it and generate everything automatically.</p>
                 </div>
               )}
               {inputMode === "video" && (
