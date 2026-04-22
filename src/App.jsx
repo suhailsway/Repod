@@ -561,7 +561,6 @@ const uploadWithUppy = async (file, onProgress) => {
               <button style={styles.submitBtn} onClick={handleSubmit}>Generate Content →</button>
               <p style={styles.inputHint}>
                 {inputMode === "audio" ? "Generates: LinkedIn · Twitter · Newsletter · Show Notes" : "Generates: LinkedIn · Twitter · Newsletter · Show Notes · Video Clips 🎬"}
-                {inputMode === "youtube" && "Generates: LinkedIn · Twitter · Newsletter · Show Notes · Video Clips 🎬"}
               </p>
             </div>
 
@@ -803,7 +802,7 @@ const styles = {
   heroAccent: { color: "#E8FF47" },
   sub: { fontSize: 17, color: "#888", maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.6 },
   modeRow: { display: "flex", gap: 12, marginBottom: 24, justifyContent: "center" },
-  modeBtn: { background: "#0d0d0d", border: "1px solid #1a1a1a", color: "#666", padding: "16px 24px", borderRadius: 12, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 200, transition: "all 0.2s ease" },
+  modeBtn: { background: "#0d0d0d", border: "1px solid #1a1a1a", color: "#666", padding: "16px 24px", borderRadius: 12, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, flex: 1, transition: "all 0.2s ease" },
   modeBtnActive: { borderColor: "#E8FF47", color: "#f0f0f0", background: "#0f110a" },
   modeSub: { fontSize: 11, color: "#555", fontWeight: 400 },
   modeBadge: { fontSize: 9, background: "#E8FF47", color: "#0a0a0a", padding: "2px 6px", borderRadius: 4, fontWeight: 700, letterSpacing: 1 },
