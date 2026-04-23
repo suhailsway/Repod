@@ -158,7 +158,6 @@ export default function App() {
   const [inputMode, setInputMode] = useState("audio");
   const [audioUrl, setAudioUrl] = useState("");
   const [videoFile, setVideoFile] = useState(null);
-  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("linkedin");
@@ -299,14 +298,13 @@ const uploadWithUppy = async (file, onProgress) => {
     const handleSubmit = async () => {
     if (inputMode === "audio" && !audioUrl.trim() && !audioFile) { setError("Please enter a podcast URL or upload an MP3 file"); return; }
     if (inputMode === "video" && !videoFile) { setError("Please upload a video file"); return; }
-    if (inputMode === "youtube" && !youtubeUrl.trim()) { setError("Please enter a YouTube URL"); return; }
     setError(null);
-    setHasClips(inputMode === "video" || inputMode === "youtube");
+    setHasClips(inputMode === "video");
     let videoPath = null;
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
     localStorage.setItem('repod_session_id', newSessionId);
-    localStorage.setItem('repod_has_clips', String(inputMode === 'video' || inputMode === 'youtube'));
+    localStorage.setItem('repod_has_clips', String(inputMode === 'video'));
     localStorage.setItem('repod_video_duration', String(videoDuration));
     if (videoFile && inputMode === "video") {
       setIsUploading(true);
@@ -333,7 +331,7 @@ const uploadWithUppy = async (file, onProgress) => {
       }
       const triggerRes = await fetch("/api/trigger", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audio_url: finalAudioUrl || audioUrl, video_path: videoPath || youtubeUrl || null, mode: inputMode === 'youtube' ? 'video' : inputMode, session_id: newSessionId, user_email: user?.primaryEmailAddress?.emailAddress || "" }),
+        body: JSON.stringify({ audio_url: finalAudioUrl || audioUrl, video_path: videoPath || null, mode: inputMode, session_id: newSessionId, user_email: user?.primaryEmailAddress?.emailAddress || "" }),
       });
       if (triggerRes.status === 403) {
         const errData = await triggerRes.json();
@@ -514,11 +512,7 @@ const uploadWithUppy = async (file, onProgress) => {
                 <span style={styles.modeSub}>Upload MP4 file</span>
                 <span style={styles.modeBadge}>+ VIDEO CLIPS</span>
               </button>
-              <button style={{ ...styles.modeBtn, ...(inputMode === "youtube" ? styles.modeBtnActive : {}) }} onClick={() => setInputMode("youtube")}>
-                ▶️ YouTube
-                <span style={styles.modeSub}>Paste YouTube URL</span>
-                <span style={styles.modeBadge}>+ VIDEO CLIPS</span>
-              </button>
+
             </div>
 
             <div style={styles.inputCard}>
@@ -535,12 +529,7 @@ const uploadWithUppy = async (file, onProgress) => {
                   </label>
                 </div>
               )}
-              {inputMode === "youtube" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 12 }}>
-                  <input style={styles.input} type="text" placeholder="Paste YouTube URL..." value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
-                  <p style={{ color: "#555", fontSize: 12, margin: 0 }}>Paste any YouTube podcast or video URL — we'll download it and generate everything automatically.</p>
-                </div>
-              )}
+
               {inputMode === "video" && (
                 <div style={{textAlign:"center", padding:"16px 0"}}>
                   <label style={{cursor:"pointer",padding:"12px 24px",border:"1px dashed #555",borderRadius:"8px",color:"#aaa",fontSize:"13px",display:"inline-block"}}>
