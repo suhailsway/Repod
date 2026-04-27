@@ -201,7 +201,7 @@ export default function App() {
       setLoadingResults(true);
       setError(null);
       let attempts = 0;
-      const maxAttempts = 60;
+      const maxAttempts = 80;
       const interval = setInterval(async () => {
         attempts++;
         const data = await fetchLatestContent(sessionId);
@@ -236,7 +236,7 @@ export default function App() {
           setError("Could not find your job. Please try again.");
           clearInterval(interval);
         }
-      }, 15000);
+      }, 10000);
       return () => clearInterval(interval);
     }
   }, [step, sessionId]);
@@ -606,7 +606,7 @@ const uploadWithUppy = async (file, onProgress) => {
                 <button style={styles.newBtn} onClick={async () => {
                   if (sessionId) {
                     try {
-                      await fetch("/api/retry", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({session_id: sessionId}) });
+                      const existing = await fetchLatestContent(sessionId); if (existing && existing.linkedin) { setResults(existing); if (existing.video_clips) setHasClips(true); setError(null); setStep("results"); return; } await fetch("/api/retry", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({session_id: sessionId}) });
                       setError(null);
                       setLoadingResults(true);
                       setStep("results");
