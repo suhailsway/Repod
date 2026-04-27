@@ -606,7 +606,15 @@ const uploadWithUppy = async (file, onProgress) => {
                 <button style={styles.newBtn} onClick={async () => {
                   if (sessionId) {
                     try {
-                      const existing = await fetchLatestContent(sessionId); if (existing && existing.linkedin) { setResults(existing); if (existing.video_clips) setHasClips(true); setError(null); setStep("results"); return; } await fetch("/api/retry", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({session_id: sessionId}) });
+                      const existing = await fetchLatestContent(sessionId); if (existing && existing.linkedin) { setResults(existing); if (existing.video_clips) setHasClips(true); setError(null); setStep("results"); return; }
+                      if (existing && existing.linkedin) {
+                        setResults(existing);
+                        if (existing.video_clips) setHasClips(true);
+                        setError(null);
+                        setStep("results");
+                        return;
+                      }
+                      await fetch("/api/retry", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({session_id: sessionId}) });
                       setError(null);
                       setLoadingResults(true);
                       setStep("results");
