@@ -1,10 +1,10 @@
-import { renderStillOnLambda } from '@remotion/lambda/client';
+const { renderStillOnLambda } = require('@remotion/lambda/client');
 
 const FUNCTION_NAME = 'remotion-render-4-0-454-mem2048mb-disk2048mb-120sec';
 const SERVE_URL = 'https://remotionlambda-useast1-w1jtdngfga.s3.us-east-1.amazonaws.com/sites/repod-cards/index.html';
 const REGION = 'us-east-1';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
   const linkedin = req.body.linkedin || '';
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const bestQuote = (sentences[0] || 'Great insights from this episode').trim().substring(0, 120);
   const words = bestQuote.split(' ');
   const midWord = words[Math.floor(words.length / 2)] || '';
-  const statMatch = linkedin.match(/[0-9]+[%MBKmbk+\s]*[a-zA-Z]+[^.!?]*/);
+  const statMatch = linkedin.match(/[0-9]+[^.!?]*/);
   const keyStat = statMatch ? statMatch[0].trim().substring(0, 80) : bestQuote.substring(0, 60);
   const context = (sentences[1] || '').trim().substring(0, 120);
 
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
       insightCard: insightRender.url,
     });
   } catch (e) {
-    console.error('Card generation error:', e);
+    console.error('Card generation error:', e.message);
     res.status(500).json({ error: e.message });
   }
-}
+};
