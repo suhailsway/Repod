@@ -26,6 +26,23 @@ const PlatformLogo = ({ platform }) => {
 
 const sansFont = "'Inter', 'Helvetica Neue', Arial, sans-serif";
 
+async function downloadCard(platform, content) {
+  try {
+    const res = await fetch('http://159.223.166.171:3001/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform, content })
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `repod-${platform}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { console.error('Download failed:', e); }
+}
+
 function SocialCard({ platform, content, onCopy, copied }) {
   if (!content) return (
     <div style={{ padding: "32px", textAlign: "center", color: "#555", fontSize: 13, fontFamily: sansFont }}>
@@ -35,9 +52,14 @@ function SocialCard({ platform, content, onCopy, copied }) {
 
   const avatarStyle = { width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flexShrink: 0, letterSpacing: -0.5 };
   const copyBtn = (
-    <button onClick={onCopy} style={{ marginTop: 16, background: copied ? "#E8FF47" : "transparent", border: `1px solid ${copied ? "#E8FF47" : "#333"}`, color: copied ? "#0a0a0a" : "#666", padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: 12, width: "100%", fontFamily: sansFont, transition: "all 0.15s" }}>
-      {copied ? "✓ Copied!" : "Copy to clipboard"}
-    </button>
+    <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+      <button onClick={onCopy} style={{ flex: 1, background: copied ? "#E8FF47" : "transparent", border: `1px solid ${copied ? "#E8FF47" : "#333"}`, color: copied ? "#0a0a0a" : "#666", padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: sansFont, transition: "all 0.15s" }}>
+        {copied ? "✓ Copied!" : "Copy to clipboard"}
+      </button>
+      <button onClick={() => downloadCard(platform, content)} style={{ background: "transparent", border: "1px solid #333", color: "#666", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: sansFont, transition: "all 0.15s", whiteSpace: "nowrap" }}>
+        ⬇ Image
+      </button>
+    </div>
   );
 
   if (platform === "twitter") {
