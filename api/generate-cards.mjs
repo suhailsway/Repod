@@ -1,10 +1,10 @@
-const { renderStillOnLambda } = require('@remotion/lambda/client');
+import { renderStillOnLambda } from '@remotion/lambda/client';
 
 const FUNCTION_NAME = 'remotion-render-4-0-454-mem2048mb-disk2048mb-120sec';
 const SERVE_URL = 'https://remotionlambda-useast1-w1jtdngfga.s3.us-east-1.amazonaws.com/sites/repod-cards/index.html';
 const REGION = 'us-east-1';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
   const linkedin = req.body.linkedin || '';
@@ -53,4 +53,4 @@ module.exports = async function handler(req, res) {
     console.error('Card generation error:', e.message);
     res.status(500).json({ error: e.message });
   }
-};
+}
