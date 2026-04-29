@@ -194,6 +194,8 @@ export default function App() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [visualCards, setVisualCards] = useState(null);
+  const [loadingCards, setLoadingCards] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [regenInstructions, setRegenInstructions] = useState("");
   const [showRegenBox, setShowRegenBox] = useState(false);
@@ -235,6 +237,16 @@ export default function App() {
               setHasClips(true);
               setLoadingResults(false);
               clearInterval(interval);
+              // Auto-generate visual cards
+              setLoadingCards(true);
+              fetch('/api/generate-cards', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ linkedin: data.linkedin, podcastName: 'Your Podcast' })
+              }).then(r => r.json()).then(cards => {
+                setVisualCards(cards);
+                setLoadingCards(false);
+              }).catch(() => setLoadingCards(false));
             } else if (status === "completed") {
               setLoadingResults(false);
               clearInterval(interval);
@@ -725,6 +737,37 @@ const uploadWithUppy = async (file, onProgress) => {
                     ))}
                   </div>
                   <SocialCard platform={activeTab} content={results ? (results[activeTab] || "") : ""} onCopy={() => copy(activeTab)} copied={copied === activeTab} />
+                  {visualCards && (
+                    <div style={{ marginTop: 16, background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 12, padding: 20 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: 1, color: "#e0e0e0" }}>Visual Assets</span>
+                        <span style={{ fontSize: 11, color: "#555", letterSpacing: 1 }}>3 cards ready</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                        {[
+                          { url: visualCards.quoteCard, label: "Quote Card", size: "1080×1080" },
+                          { url: visualCards.episodeCard, label: "Episode Poster", size: "1080×1350" },
+                          { url: visualCards.insightCard, label: "Key Insight", size: "1080×1080" },
+                        ].map(({ url, label, size }) => (
+                          <div key={label} style={{ background: "#080808", border: "1px solid #1a1a1a", borderRadius: 8, overflow: "hidden" }}>
+                            <img src={url} alt={label} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                            <div style={{ padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div>
+                                <div style={{ color: "#ccc", fontSize: 11, fontWeight: 700 }}>{label}</div>
+                                <div style={{ color: "#555", fontSize: 10 }}>{size}</div>
+                              </div>
+                              <a href={url} download style={{ color: "#E8FF47", fontSize: 11, textDecoration: "none", fontWeight: 700 }}>↓</a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {loadingCards && !visualCards && (
+                    <div style={{ marginTop: 16, background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 12, padding: 20, textAlign: "center" }}>
+                      <div style={{ color: "#555", fontSize: 13 }}>✨ Generating visual cards...</div>
+                    </div>
+                  )}
                   <div style={{ marginTop: 12 }}>
                     {showRegenBox ? (
                       <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 10, padding: 16 }}>
