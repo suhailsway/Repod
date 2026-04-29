@@ -768,6 +768,21 @@ const uploadWithUppy = async (file, onProgress) => {
                       <div style={{ color: "#555", fontSize: 13 }}>✨ Generating visual cards...</div>
                     </div>
                   )}
+                  {!visualCards && !loadingCards && results && results.linkedin && (
+                    <button onClick={() => {
+                      setLoadingCards(true);
+                      fetch('/api/generate-cards', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ linkedin: results.linkedin, podcastName: 'Your Podcast' })
+                      }).then(r => r.json()).then(cards => {
+                        setVisualCards(cards);
+                        setLoadingCards(false);
+                      }).catch(() => setLoadingCards(false));
+                    }} style={{ marginTop: 16, width: "100%", background: "transparent", border: "1px solid #E8FF47", color: "#E8FF47", padding: "10px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+                      ✨ Generate Visual Cards
+                    </button>
+                  )}
                   <div style={{ marginTop: 12 }}>
                     {showRegenBox ? (
                       <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 10, padding: 16 }}>
