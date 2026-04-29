@@ -28,7 +28,7 @@ const sansFont = "'Inter', 'Helvetica Neue', Arial, sans-serif";
 
 async function downloadCard(platform, content) {
   try {
-    const res = await fetch('http://159.223.166.171:3001/render', {
+    const res = await fetch('/api/render-card', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ platform, content })
