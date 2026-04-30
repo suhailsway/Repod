@@ -1,15 +1,44 @@
 const encode = (s) => encodeURIComponent(s);
 
+async function extractBestQuote(linkedin, transcript) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: `Extract the single most shareable, punchy quote from this podcast content. It should be 10-20 words, standalone, and work as a visual quote card. Return ONLY the quote text, nothing else.
+
+Content: ${(linkedin || '').substring(0, 1000)}`
+        }]
+      })
+    });
+    const data = await res.json();
+    return data.content[0].text.trim().replace(/^["']|["']$/g, '');
+  } catch(e) {
+    const sentences = (linkedin || '').split(/[.!?]/).filter(s => s.trim().length > 30);
+    return (sentences[1] || sentences[0] || 'Great insights from this episode').trim().substring(0, 120);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
   const linkedin = req.body.linkedin || '';
   const podcastName = req.body.podcastName || 'Your Podcast';
 
-  const sentences = linkedin.split(/[.!?]/).filter(s => s.trim().length > 20);
-  const bestQuote = (sentences[0] || 'Great insights from this episode').trim().substring(0, 120);
+  const bestQuote = await extractBestQuote(linkedin);
   const words = bestQuote.split(' ');
   const midWord = words[Math.floor(words.length / 2)] || '';
+
+  const sentences = linkedin.split(/[.!?]/).filter(s => s.trim().length > 20);
   const statMatch = linkedin.match(/[0-9]+[^.!?]*/);
   const keyStat = statMatch ? statMatch[0].trim().substring(0, 80) : bestQuote.substring(0, 60);
   const context = (sentences[1] || '').trim().substring(0, 120);
