@@ -810,7 +810,7 @@ const uploadWithUppy = async (file, onProgress) => {
                   </div>
                 </div>
 
-                {hasClips && clipUrls.length > 0 && results.status === "completed" && (
+                {hasClips && clipUrls.length > 0 && (results.status === "completed" || (results.clips_status && results.clips_status.includes("clips ready"))) && (
                   <div style={styles.panel}>
                     <div style={styles.panelHeader}>
                       <span style={styles.panelTitle}>Short-Form Clips</span>
