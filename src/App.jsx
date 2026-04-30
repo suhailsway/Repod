@@ -786,7 +786,7 @@ const uploadWithUppy = async (file, onProgress) => {
                       fetch('/api/generate-cards', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ linkedin: results.linkedin, podcastName: podcastName || 'Your Podcast' })
+                        body: JSON.stringify({ linkedin: results.linkedin, podcastName: podcastName || localStorage.getItem('repod_podcast_name') || 'Your Podcast' })
                       }).then(r => r.json()).then(cards => {
                         setVisualCards(cards);
                         setLoadingCards(false);
