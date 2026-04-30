@@ -14,14 +14,14 @@ async function extractBestQuote(linkedin, transcript) {
         max_tokens: 200,
         messages: [{
           role: 'user',
-          content: `Extract the single most shareable, punchy quote from this podcast content. It should be 10-20 words, standalone, and work as a visual quote card. Return ONLY the quote text, nothing else.
+          content: `Extract the single most shareable, punchy quote from this podcast content. It should be 10-20 words, standalone, and work as a visual quote card. Do NOT use em dashes (—). Return ONLY the quote text, nothing else.
 
 Content: ${(linkedin || '').substring(0, 1000)}`
         }]
       })
     });
     const data = await res.json();
-    return data.content[0].text.trim().replace(/^["']|["']$/g, '');
+    return data.content[0].text.trim().replace(/^["']|["']$/g, '').replace(/—/g, ' ').replace(/–/g, ' ').replace(/\s+/g, ' ').trim();
   } catch(e) {
     const sentences = (linkedin || '').split(/[.!?]/).filter(s => s.trim().length > 30);
     return (sentences[1] || sentences[0] || 'Great insights from this episode').trim().substring(0, 120);
