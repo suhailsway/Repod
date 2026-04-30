@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const sentences = linkedin.split(/[.!?]/).filter(s => s.trim().length > 20);
   const statMatch = linkedin.match(/[0-9]+[^.!?]*/);
   const keyStat = statMatch ? statMatch[0].trim().substring(0, 80) : bestQuote.substring(0, 60);
-  const context = (sentences[1] || '').trim().substring(0, 120);
+  const context = (sentences[1] || '').trim().substring(0, 120).replace(/—/g, ' ').replace(/–/g, ' ').replace(/\s+/g, ' ').trim();
 
   const BASE = 'http://159.223.166.171:3002';
 
