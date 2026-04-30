@@ -13,7 +13,6 @@ module.exports = async function handler(req, res) {
   const context = (sentences[1] || '').trim().substring(0, 120);
 
   const BASE = 'http://159.223.166.171:3002';
-
   const encode = (s) => encodeURIComponent(s);
 
   try {
