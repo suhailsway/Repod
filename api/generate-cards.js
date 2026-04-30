@@ -1,4 +1,4 @@
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
   const linkedin = req.body.linkedin || '';
@@ -39,4 +39,4 @@ module.exports = async function handler(req, res) {
     console.error('Card generation error:', e.message);
     res.status(500).json({ error: e.message });
   }
-};
+}
