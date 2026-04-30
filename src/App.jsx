@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { inject } from "@vercel/analytics";
 import { useUser, SignInButton, SignOutButton, SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-react";
 import Uppy from "@uppy/core";
 import AwsS3 from "@uppy/aws-s3";
@@ -175,6 +176,7 @@ function SocialCard({ platform, content, onCopy, copied }) {
 }
 
 export default function App() {
+  inject();
   const { isSignedIn, user } = useUser();
   const [step, setStep] = useState("upload");
   const [inputMode, setInputMode] = useState("audio");
