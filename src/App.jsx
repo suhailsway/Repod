@@ -673,7 +673,7 @@ const uploadWithUppy = async (file, onProgress) => {
                 <h2 style={styles.resultsTitle}>{loadingResults ? "Generating your content..." : "Your content is ready"}</h2>
                 <p style={styles.resultsSub}>{loadingResults ? "This may take several minutes for large files" : hasClips ? `7 text assets + ${clipUrls.length} video clips` : "7 text assets generated"}</p>
               </div>
-              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); localStorage.removeItem('repod_session_id'); localStorage.removeItem('repod_has_clips'); localStorage.removeItem('repod_video_duration'); }}>
+              <button style={styles.newBtn} onClick={() => { setStep("upload"); setAudioUrl(""); setVideoFile(null); setProgress(0); setResults(null); setHasClips(false); setSessionId(null); setVisualCards(null); setLoadingCards(false); localStorage.removeItem('repod_session_id'); localStorage.removeItem('repod_has_clips'); localStorage.removeItem('repod_video_duration'); }}>
                 + New episode
               </button>
             </div>
