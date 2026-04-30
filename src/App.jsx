@@ -196,6 +196,7 @@ export default function App() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [podcastName, setPodcastName] = useState(localStorage.getItem("repod_podcast_name") || "");
   const [visualCards, setVisualCards] = useState(null);
   const [loadingCards, setLoadingCards] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -551,6 +552,15 @@ const uploadWithUppy = async (file, onProgress) => {
 
             </div>
 
+            <div style={{ marginBottom: 16 }}>
+              <input
+                style={{ ...styles.input, background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 10, padding: "12px 16px", width: "100%", fontSize: 14, color: "#f0f0f0" }}
+                type="text"
+                placeholder="Your podcast name (e.g. The Tim Ferriss Show)"
+                value={podcastName}
+                onChange={e => { setPodcastName(e.target.value); localStorage.setItem("repod_podcast_name", e.target.value); }}
+              />
+            </div>
             <div style={styles.inputCard}>
               {inputMode === "audio" && (
                 <div>
@@ -776,7 +786,7 @@ const uploadWithUppy = async (file, onProgress) => {
                       fetch('/api/generate-cards', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ linkedin: results.linkedin, podcastName: 'Your Podcast' })
+                        body: JSON.stringify({ linkedin: results.linkedin, podcastName: podcastName || 'Your Podcast' })
                       }).then(r => r.json()).then(cards => {
                         setVisualCards(cards);
                         setLoadingCards(false);
