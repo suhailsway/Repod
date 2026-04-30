@@ -1,4 +1,6 @@
-async function handler(req, res) {
+const encode = (s) => encodeURIComponent(s);
+
+export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
   const linkedin = req.body.linkedin || '';
@@ -13,7 +15,6 @@ async function handler(req, res) {
   const context = (sentences[1] || '').trim().substring(0, 120);
 
   const BASE = 'http://159.223.166.171:3002';
-  const encode = (s) => encodeURIComponent(s);
 
   try {
     const [quoteRes, episodeRes, insightRes] = await Promise.all([
