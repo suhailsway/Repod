@@ -287,7 +287,7 @@ const uploadWithUppy = async (file, onProgress) => {
     const startRes = await fetch(`${WORKER_URL}/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name }),
+      body: JSON.stringify({ filename: sanitizeFilename(file.name) }),
     });
     const { uploadId, key } = await startRes.json();
 
