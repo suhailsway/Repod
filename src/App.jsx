@@ -280,6 +280,8 @@ export default function App() {
 
   const WORKER_URL = "https://upload.repodlab.com";
 
+const sanitizeFilename = (name) => name.replace(/[^ -ÿ]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_') || 'upload.mp4';
+
 const uploadWithUppy = async (file, onProgress) => {
     const CHUNK_SIZE = 50 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
